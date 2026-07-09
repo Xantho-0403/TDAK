@@ -1,0 +1,8 @@
+{
+  "name": "Modern Tetris Practice Platform",
+  "description": "A feature-rich practice tool for modern Tetris mechanics featuring solo modes and practice versus a bot.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

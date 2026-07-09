@@ -456,6 +456,14 @@ canvas#tetrisCanvas {
                 <label for="clearDelayInput">Line Clear Delay (ms)</label>
                 <input type="number" id="clearDelayInput" value="0" min="0" max="1000">
             </div>
+            <div class="setting-item">
+                <label for="botPpsInput">BOT Speed (0.5~15 PPS)</label>
+                <input type="number" id="botPpsInput" value="3.0" min="0.5" max="15.0" step="0.5">
+            </div>
+            <div class="setting-item" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                <input type="checkbox" id="aiDebugOverlayCheckbox" style="width: auto; cursor: pointer; accent-color: #ff33aa;">
+                <label for="aiDebugOverlayCheckbox" style="margin-bottom: 0; cursor: pointer; user-select: none;">Show AI Debug Overlay</label>
+            </div>
             
             <div class="setting-item" id="survivalSettingArea" style="display: none;">
                 <label for="apmInput">TARGET BOT APM (<span id="apmValLabel">70</span>)</label>
@@ -581,9 +589,23 @@ canvas#tetrisCanvas {
         <div class="vs-center-panel">
             <div class="vs-mode-label">VS BOT MODE</div>
             <div class="vs-timer" id="vsTimerDisplay">00:00.00</div>
+            <div class="vs-setting-item" style="margin-top: 15px; margin-bottom: 15px; text-align: center; width: 100%;">
+                <label for="vsBotPpsInput" style="font-size: 11px; color: #aaa; display: block; margin-bottom: 5px; font-weight: bold; letter-spacing: 0.5px;">BOT SPEED: <span id="vsBotPpsLabel">3.0</span> PPS</label>
+                <input type="range" id="vsBotPpsInput" min="0.5" max="15" value="3.0" step="0.5" style="width: 80%; background: #222; accent-color: #ff33aa;">
+            </div>
+            <!-- SCORE BOARD -->
+            <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; margin-top: 5px; letter-spacing: 1px;">Score</div>
+            <div id="vsScoreDisplay" style="font-size: 26px; font-weight: bold; color: #ffffff; margin-bottom: 12px; font-family: monospace; text-shadow: 0 0 10px rgba(255,255,255,0.2); user-select: none;">
+                <span id="playerWinsLabel" style="color: #00f0f0;">0</span>
+                <span style="color: #666; margin: 0 8px;">-</span>
+                <span id="botWinsLabel" style="color: #ff33aa;">0</span>
+            </div>
             <div class="vs-vs-badge">VS</div>
             <button class="vs-btn vs-reset-btn" onclick="game.reset()">RESET (R)</button>
             <button class="vs-btn vs-menu-btn" onclick="game.openModal()">🏆 MENU</button>
+            <div id="botTelemetryDisplay" style="font-size: 11px; font-family: monospace; color: #ff33aa; margin-top: 15px; background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255,51,170,0.2); text-align: center; width: 85%;">
+                ACTUAL PPS: <span id="actualPpsLabel" style="font-weight: bold; color: #fff;">0.00</span> / <span id="targetPpsLabel" style="font-weight: bold; color: #fff;">3.0</span>
+            </div>
         </div>
 
         <!-- Bot Panel Container -->
@@ -784,6 +806,11 @@ class GameInstance {
         this.onAction = null;
         this.onUIUpdate = null;
         this.onNewBest = null;
+        this.onAttackGenerated = null;
+        this.onGarbageResolve = null;
+        this.onGameOver = null;
+        this.onGameOverStop = null;
+        this.matchResult = null;
 
         this.init();
     }
@@ -999,6 +1026,7 @@ class GameInstance {
             this.gameActive = false;
             if (this.onAction) this.onAction("TOP OUT!");
             if (this.onUIUpdate) this.onUIUpdate();
+            if (this.onGameOver) this.onGameOver("TOP OUT");
         }
     }
 
@@ -1158,6 +1186,7 @@ class GameInstance {
             this.gameActive = false;
             if (this.onAction) this.onAction("LOCK OUT!");
             if (this.onUIUpdate) this.onUIUpdate();
+            if (this.onGameOver) this.onGameOver("LOCK OUT");
             return;
         }
 
@@ -1208,6 +1237,9 @@ class GameInstance {
             this.currentSpike += attackPower;
             this.spikeTimer = 2000; 
             this.totalAttackSent += attackPower;
+            if (this.currentMode === 'VS_BOT' && this.onAttackGenerated) {
+                this.onAttackGenerated(attackPower);
+            }
         }
 
         if (cleared > 0) {
@@ -1230,6 +1262,13 @@ class GameInstance {
 
             if (this.onAction) this.onAction(`${spinLabel}${this.combo - 1} COMBO!`);
         } else {
+            if (this.currentMode === 'VS_BOT') {
+                this.combo = 0;
+                if (this.onGarbageResolve) {
+                    this.onGarbageResolve();
+                }
+            }
+
             if (this.currentMode === '4W') {
                 this.gameActive = false;
                 let finalCombo = this.combo > 0 ? this.combo - 1 : 0;
@@ -1527,6 +1566,37 @@ class Renderer {
             mainCtx.restore();
         }
 
+        // Draw VS Bot Match Result Overlay
+        if (!engine.gameActive && engine.currentMode === 'VS_BOT' && engine.matchResult) {
+            mainCtx.save();
+            mainCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+            
+            mainCtx.textAlign = 'center';
+            mainCtx.textBaseline = 'middle';
+            mainCtx.shadowColor = 'rgba(0,0,0,0.9)';
+            mainCtx.shadowBlur = 12;
+            
+            if (engine.matchResult === 'WIN') {
+                mainCtx.fillStyle = '#00f0f0';
+                mainCtx.font = 'bold 36px monospace';
+                mainCtx.fillText('VICTORY', mainCanvas.width / 2, mainCanvas.height / 2);
+                
+                mainCtx.fillStyle = '#ffffff';
+                mainCtx.font = '12px monospace';
+                mainCtx.fillText('PRESS R TO REMATCH', mainCanvas.width / 2, mainCanvas.height / 2 + 50);
+            } else if (engine.matchResult === 'LOSE') {
+                mainCtx.fillStyle = '#ff33aa';
+                mainCtx.font = 'bold 36px monospace';
+                mainCtx.fillText('DEFEAT', mainCanvas.width / 2, mainCanvas.height / 2);
+                
+                mainCtx.fillStyle = '#ffffff';
+                mainCtx.font = '12px monospace';
+                mainCtx.fillText('PRESS R TO REMATCH', mainCanvas.width / 2, mainCanvas.height / 2 + 50);
+            }
+            mainCtx.restore();
+        }
+
         // Render Hold Canvas
         const holdCtx = this.holdCtx;
         const holdCanvas = this.holdCanvas;
@@ -1565,6 +1635,71 @@ class Renderer {
                 }
             }
         }
+
+        // AI Debug Overlay rendering (Target placement preview and Heuristic details)
+        if (engine.aiDebugData && engine.aiDebugData.show) {
+            // 1. Draw target placement translucent highlight on the main board
+            if (engine.aiDebugData.target) {
+                const target = engine.aiDebugData.target;
+                const matrix = target.matrix;
+                
+                if (matrix) {
+                    mainCtx.save();
+                    mainCtx.globalAlpha = 0.5;
+                    mainCtx.strokeStyle = '#00ffff'; // Cyan highlight outline
+                    mainCtx.lineWidth = 2;
+                    
+                    for (let r = 0; r < matrix.length; r++) {
+                        for (let c = 0; c < matrix[r].length; c++) {
+                            if (matrix[r][c] !== 0 && target.y + r >= 0) {
+                                const blockX = (target.x + c) * 30;
+                                const blockY = (target.y + r) * 30;
+                                
+                                // Soft neon cyan fill
+                                mainCtx.fillStyle = 'rgba(0, 240, 240, 0.3)';
+                                mainCtx.fillRect(blockX, blockY, 30, 30);
+                                mainCtx.strokeRect(blockX + 1, blockY + 1, 28, 28);
+                            }
+                        }
+                    }
+                    mainCtx.restore();
+                }
+            }
+
+            // 2. Draw Floating Telemetry Card
+            mainCtx.save();
+            mainCtx.fillStyle = 'rgba(10, 10, 12, 0.85)';
+            mainCtx.strokeStyle = '#ff33aa';
+            mainCtx.lineWidth = 1.5;
+            
+            const boxX = 10;
+            const boxY = 10;
+            const boxW = 280;
+            const boxH = 82;
+            
+            mainCtx.fillRect(boxX, boxY, boxW, boxH);
+            mainCtx.strokeRect(boxX, boxY, boxW, boxH);
+            
+            // Header
+            mainCtx.fillStyle = '#ff33aa';
+            mainCtx.font = 'bold 11px monospace';
+            mainCtx.fillText('🤖 AI DEBUG PANEL', boxX + 12, boxY + 20);
+            
+            // Stats Text
+            mainCtx.fillStyle = '#ffffff';
+            mainCtx.font = '11px sans-serif';
+            mainCtx.fillText(`Evaluated Placements: ${engine.aiDebugData.evaluatedCount}`, boxX + 12, boxY + 38);
+            mainCtx.fillText(`Best Heuristic Score: ${engine.aiDebugData.score.toFixed(2)}`, boxX + 12, boxY + 54);
+            
+            if (engine.aiDebugData.target) {
+                const rotNames = ['0°', 'CW (90°)', '180°', 'CCW (270°)'];
+                const rotName = rotNames[engine.aiDebugData.target.rot] || '0°';
+                mainCtx.fillText(`Target: Col ${engine.aiDebugData.target.x}, Row ${engine.aiDebugData.target.y}, Rot: ${rotName}`, boxX + 12, boxY + 70);
+            } else {
+                mainCtx.fillText('Target: Searching...', boxX + 12, boxY + 70);
+            }
+            mainCtx.restore();
+        }
     }
 
     renderHistoryGraph(history) {
@@ -1601,6 +1736,8 @@ class Renderer {
 
 
 // --- INPUT HANDLER ---
+
+
 
 class InputProvider {
     constructor() {
@@ -1770,8 +1907,726 @@ class KeyboardInputProvider extends InputProvider {
     }
 }
 
+// Helper Simulation Functions for DebugAI
+function rotatePieceSim(piece, direction, grid, currentMode) {
+    if (piece.type === 'O') return true;
+
+    const currentMatrix = piece.matrix;
+    const size = currentMatrix.length;
+    let newMatrix = Array.from({ length: size }, () => Array(size).fill(0));
+
+    if (direction === 'CW') {
+        for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) newMatrix[c][size - 1 - r] = currentMatrix[r][c];
+    } else if (direction === 'CCW') {
+        for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) newMatrix[size - 1 - c][r] = currentMatrix[r][c];
+    } else if (direction === '180') {
+        for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) newMatrix[size - 1 - r][size - 1 - c] = currentMatrix[r][c];
+    }
+
+    const startState = piece.rotationState;
+    let endState = startState;
+    if (direction === 'CW') endState = (startState + 1) % 4;
+    else if (direction === 'CCW') endState = (startState + 3) % 4;
+    else if (direction === '180') endState = (startState + 2) % 4;
+
+    const lookupKey = `${startState}->${endState}`;
+    const kickTable = (piece.type === 'I') ? KICK_DATA_I[lookupKey] : KICK_DATA_NORMAL[lookupKey];
+
+    const isValidMoveSim = (matrix, nextX, nextY) => {
+        for (let r = 0; r < matrix.length; r++) {
+            for (let c = 0; c < matrix[r].length; c++) {
+                if (matrix[r][c] !== 0) {
+                    let boardX = nextX + c;
+                    let boardY = nextY + r;
+                    if (boardX < 0 || boardX >= 10 || boardY >= 20) return false;
+                    if (currentMode === '4W' && boardY < 0) {
+                        if (boardX < 3 || boardX > 6) return false;
+                    }
+                    if (boardY >= 0 && grid[boardY][boardX] !== 0) return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    if (kickTable) {
+        for (let i = 0; i < kickTable.length; i++) {
+            let dx = kickTable[i][0];
+            let dy = -kickTable[i][1];
+
+            if (isValidMoveSim(newMatrix, piece.x + dx, piece.y + dy)) {
+                piece.matrix = newMatrix;
+                piece.x += dx;
+                piece.y += dy;
+                piece.rotationState = endState;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function movePieceSim(piece, dx, dy, grid, currentMode) {
+    const isValidMoveSim = (matrix, nextX, nextY) => {
+        for (let r = 0; r < matrix.length; r++) {
+            for (let c = 0; c < matrix[r].length; c++) {
+                if (matrix[r][c] !== 0) {
+                    let boardX = nextX + c;
+                    let boardY = nextY + r;
+                    if (boardX < 0 || boardX >= 10 || boardY >= 20) return false;
+                    if (currentMode === '4W' && boardY < 0) {
+                        if (boardX < 3 || boardX > 6) return false;
+                    }
+                    if (boardY >= 0 && grid[boardY][boardX] !== 0) return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    if (isValidMoveSim(piece.matrix, piece.x + dx, piece.y + dy)) {
+        piece.x += dx;
+        piece.y += dy;
+        return true;
+    }
+    return false;
+}
+
+function dropPieceSim(piece, grid, currentMode) {
+    while (movePieceSim(piece, 0, 1, grid, currentMode)) {}
+}
+
+function getPlacementSim(game, rot, targetX) {
+    const grid = game.grid.map(row => [...row]);
+    const currentMode = game.currentMode;
+
+    let piece = {
+        type: game.currentPiece.type,
+        matrix: JSON.parse(JSON.stringify(game.currentPiece.matrix)),
+        x: game.currentPiece.x,
+        y: game.currentPiece.y,
+        rotationState: game.currentPiece.rotationState
+    };
+
+    const actions = [];
+
+    // 1. Apply rotations
+    if (rot === 1) {
+        if (!rotatePieceSim(piece, 'CW', grid, currentMode)) return null;
+        actions.push('cw');
+    } else if (rot === 2) {
+        if (!rotatePieceSim(piece, '180', grid, currentMode)) return null;
+        actions.push('rotate180');
+    } else if (rot === 3) {
+        if (!rotatePieceSim(piece, 'CCW', grid, currentMode)) return null;
+        actions.push('ccw');
+    }
+
+    // 2. Apply horizontal movement
+    const dx = targetX - piece.x;
+    const step = dx > 0 ? 1 : -1;
+    const absDx = Math.abs(dx);
+    const moveAction = dx > 0 ? 'right' : 'left';
+
+    for (let i = 0; i < absDx; i++) {
+        if (!movePieceSim(piece, step, 0, grid, currentMode)) return null;
+        actions.push(moveAction);
+    }
+
+    // 3. Drop to find landing Y
+    dropPieceSim(piece, grid, currentMode);
+
+    // Verify final landing spot is valid
+    const isValidMoveSim = (matrix, nextX, nextY) => {
+        for (let r = 0; r < matrix.length; r++) {
+            for (let c = 0; c < matrix[r].length; c++) {
+                if (matrix[r][c] !== 0) {
+                    let boardX = nextX + c;
+                    let boardY = nextY + r;
+                    if (boardX < 0 || boardX >= 10 || boardY >= 20) return false;
+                    if (boardY >= 0 && grid[boardY][boardX] !== 0) return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    if (!isValidMoveSim(piece.matrix, piece.x, piece.y)) {
+        return null;
+    }
+
+    actions.push('hardDrop');
+
+    return {
+        x: piece.x,
+        y: piece.y,
+        rot: rot,
+        actions: actions
+    };
+}
+
+class BotInputProvider extends InputProvider {
+    constructor() {
+        super();
+    }
+
+    executeAction(action) {
+        if (!this.game || !this.game.gameActive || this.game.countdownActive) return;
+
+        switch (action) {
+            case 'left':
+                this.game.moveLeft();
+                break;
+            case 'right':
+                this.game.moveRight();
+                break;
+            case 'cw':
+                this.game.rotateCW();
+                break;
+            case 'ccw':
+                this.game.rotateCCW();
+                break;
+            case 'rotate180':
+                this.game.rotate180();
+                break;
+            case 'down':
+                this.game.tryMove(0, 1);
+                break;
+            case 'hardDrop':
+                this.game.hardDrop();
+                break;
+            case 'hold':
+                this.game.hold();
+                break;
+        }
+
+        if (this.game.onUIUpdate) {
+            this.game.onUIUpdate();
+        }
+    }
+}
+
+class PPSScheduler {
+    constructor(inputProvider) {
+        this.inputProvider = inputProvider;
+        this.pendingActions = []; // Array of { action: string, time: number }
+        this.pps = 3.0;
+        this.elapsedTime = 0;
+        this.nextAvailableStartTime = 0;
+    }
+
+    setPPS(pps) {
+        this.pps = Math.max(0.5, Math.min(15.0, pps));
+    }
+
+    queueAction(action) {
+        this.pendingActions.push({
+            action: action,
+            time: this.elapsedTime
+        });
+    }
+
+    queueActions(actions) {
+        if (actions.length === 0) return;
+
+        if (this.nextAvailableStartTime < this.elapsedTime) {
+            this.nextAvailableStartTime = this.elapsedTime;
+        }
+
+        const duration = 1000 / this.pps; // Duration for one complete piece placement in ms
+        const N = actions.length;
+
+        for (let i = 0; i < N; i++) {
+            // Evenly distribute actions across the allocated piece duration budget.
+            // The final Hard Drop (index N-1) completes exactly at the end of the duration budget (1000 / PPS ms).
+            const actionTime = this.nextAvailableStartTime + (i + 1) * (duration / N);
+            this.pendingActions.push({
+                action: actions[i],
+                time: actionTime
+            });
+        }
+
+        this.nextAvailableStartTime += duration;
+    }
+
+    clearLeftoverActions() {
+        this.pendingActions = [];
+    }
+
+    clearQueue() {
+        this.pendingActions = [];
+        this.elapsedTime = 0;
+        this.nextAvailableStartTime = 0;
+    }
+
+    update(dt) {
+        this.elapsedTime += dt;
+
+        // Execute any actions whose scheduled time has arrived
+        while (this.pendingActions.length > 0 && this.pendingActions[0].time <= this.elapsedTime) {
+            const item = this.pendingActions.shift();
+            this.inputProvider.executeAction(item.action);
+        }
+    }
+}
+
+// Helper function to simulate a placement on a grid copy and compute features + score
+function simulateCandidate(game, candidate) {
+    const grid = game.grid.map(row => [...row]);
+    const currentMode = game.currentMode;
+
+    let piece = {
+        type: game.currentPiece.type,
+        matrix: JSON.parse(JSON.stringify(game.currentPiece.matrix)),
+        x: game.currentPiece.x,
+        y: game.currentPiece.y,
+        rotationState: game.currentPiece.rotationState
+    };
+
+    // 1. Apply rotations
+    if (candidate.rot === 1) {
+        rotatePieceSim(piece, 'CW', grid, currentMode);
+    } else if (candidate.rot === 2) {
+        rotatePieceSim(piece, '180', grid, currentMode);
+    } else if (candidate.rot === 3) {
+        rotatePieceSim(piece, 'CCW', grid, currentMode);
+    }
+
+    // 2. Apply horizontal movement to targetX
+    const dx = candidate.x - piece.x;
+    const step = dx > 0 ? 1 : -1;
+    const absDx = Math.abs(dx);
+    for (let i = 0; i < absDx; i++) {
+        movePieceSim(piece, step, 0, grid, currentMode);
+    }
+
+    // 3. Drop
+    dropPieceSim(piece, grid, currentMode);
+
+    // Save final placed piece cells coordinates
+    const pieceCells = [];
+    const matrix = piece.matrix;
+    const size = matrix.length;
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            if (matrix[r][c] !== 0) {
+                pieceCells.push({ x: piece.x + c, y: piece.y + r });
+            }
+        }
+    }
+
+    // Check if placement is out of bounds or collides
+    let isValid = true;
+    pieceCells.forEach(cell => {
+        if (cell.x < 0 || cell.x >= 10 || cell.y >= 20) isValid = false;
+        if (cell.y >= 0 && grid[cell.y][cell.x] !== 0) isValid = false;
+    });
+
+    if (!isValid) return null;
+
+    // Temporarily place the piece on the grid to calculate features
+    pieceCells.forEach(cell => {
+        if (cell.y >= 0) {
+            grid[cell.y][cell.x] = 1; // Mark as occupied
+        }
+    });
+
+    // Check lines cleared
+    let linesCleared = 0;
+    const clearedRows = [];
+    for (let r = 0; r < 20; r++) {
+        if (grid[r].every(val => val !== 0)) {
+            linesCleared++;
+            clearedRows.push(r);
+        }
+    }
+
+    // Calculate eroded piece cells
+    let cellsOfPlacedPieceCleared = 0;
+    if (linesCleared > 0) {
+        pieceCells.forEach(cell => {
+            if (clearedRows.includes(cell.y)) {
+                cellsOfPlacedPieceCleared++;
+            }
+        });
+    }
+    const erodedPieceCells = linesCleared * cellsOfPlacedPieceCleared;
+
+    // Create post-line-clear grid
+    const postClearGrid = [];
+    for (let r = 0; r < 20; r++) {
+        if (!grid[r].every(val => val !== 0)) {
+            postClearGrid.push([...grid[r]]);
+        }
+    }
+    while (postClearGrid.length < 20) {
+        postClearGrid.unshift(Array(10).fill(0));
+    }
+
+    // Now calculate features on postClearGrid
+    // 1. Landing Height: average height of cells of placed piece
+    let sumY = 0;
+    pieceCells.forEach(cell => {
+        sumY += (20 - cell.y); // height relative to the floor (row 19 is height 1)
+    });
+    const landingHeight = sumY / pieceCells.length;
+
+    // 2. Row Transitions
+    let rowTransitions = 0;
+    for (let r = 0; r < 20; r++) {
+        for (let c = -1; c < 10; c++) {
+            const cell1 = (c < 0) ? true : (postClearGrid[r][c] !== 0);
+            const cell2 = (c + 1 >= 10) ? true : (postClearGrid[r][c+1] !== 0);
+            if (cell1 !== cell2) {
+                rowTransitions++;
+            }
+        }
+    }
+
+    // 3. Column Transitions
+    let colTransitions = 0;
+    for (let c = 0; c < 10; c++) {
+        for (let r = -1; r < 20; r++) {
+            const cell1 = (r < 0) ? false : (postClearGrid[r][c] !== 0);
+            const cell2 = (r + 1 >= 20) ? true : (postClearGrid[r+1][c] !== 0);
+            if (cell1 !== cell2) {
+                colTransitions++;
+            }
+        }
+    }
+
+    // 4. Holes
+    let holes = 0;
+    for (let c = 0; c < 10; c++) {
+        let hasBlock = false;
+        for (let r = 0; r < 20; r++) {
+            if (postClearGrid[r][c] !== 0) {
+                hasBlock = true;
+            } else if (hasBlock) {
+                holes++;
+            }
+        }
+    }
+
+    // 5. Wells depth sum
+    let wellsSum = 0;
+    for (let c = 0; c < 10; c++) {
+        let depth = 0;
+        for (let r = 0; r < 20; r++) {
+            if (postClearGrid[r][c] === 0) {
+                const leftIsWallOrOccupied = (c === 0) || (postClearGrid[r][c-1] !== 0);
+                const rightIsWallOrOccupied = (c === 9) || (postClearGrid[r][c+1] !== 0);
+                if (leftIsWallOrOccupied && rightIsWallOrOccupied) {
+                    depth++;
+                    wellsSum += depth;
+                } else {
+                    depth = 0;
+                }
+            } else {
+                depth = 0;
+            }
+        }
+    }
+
+    // Heuristic Score Calculation using optimized El-Tetris weights
+    const lhWeight = -4.500158825082766;
+    const epcWeight = 3.4181268101392694;
+    const rtWeight = -3.2178882868487753;
+    const ctWeight = -9.348695305445199;
+    const hWeight = -7.899265427351652;
+    const wWeight = -3.3855952525947258;
+
+    const score = (landingHeight * lhWeight) +
+                  (erodedPieceCells * epcWeight) +
+                  (rowTransitions * rtWeight) +
+                  (colTransitions * ctWeight) +
+                  (holes * hWeight) +
+                  (wellsSum * wWeight);
+
+    return {
+        score: score,
+        finalMatrix: piece.matrix,
+        features: {
+            landingHeight,
+            erodedPieceCells,
+            rowTransitions,
+            colTransitions,
+            holes,
+            wellsSum
+        }
+    };
+}
+
+class DebugAI {
+    constructor(gameInstance, ppsScheduler) {
+        this.game = gameInstance;
+        this.scheduler = ppsScheduler;
+        this.lastPiece = null;
+    }
+
+    update(dt) {
+        if (!this.game || !this.game.gameActive || this.game.countdownActive) {
+            return;
+        }
+
+        if (this.game.currentPiece && this.lastPiece !== this.game.currentPiece) {
+            this.scheduler.clearLeftoverActions();
+            const planResult = this.plan();
+            this.scheduler.queueActions(planResult.actions);
+            this.lastPiece = this.game.currentPiece;
+
+            // Update AI overlay data on the game instance
+            const debugCheckbox = document.getElementById('aiDebugOverlayCheckbox');
+            const showOverlay = debugCheckbox ? debugCheckbox.checked : false;
+
+            this.game.aiDebugData = {
+                show: showOverlay,
+                score: planResult.score,
+                evaluatedCount: planResult.evaluatedCount,
+                target: planResult.target
+            };
+        }
+
+        this.scheduler.update(dt);
+    }
+
+    plan() {
+        if (!this.game.currentPiece) {
+            return { actions: ['hardDrop'], score: -999999, evaluatedCount: 0, target: null };
+        }
+
+        const candidates = [];
+
+        // Try all 4 rotations (0, 1, 2, 3) and columns (from -4 to 9)
+        for (let rot = 0; rot < 4; rot++) {
+            for (let x = -4; x < 10; x++) {
+                const placement = getPlacementSim(this.game, rot, x);
+                if (placement !== null) {
+                    const isDup = candidates.some(c => c.x === placement.x && c.y === placement.y && c.rot === placement.rot);
+                    if (!isDup) {
+                        candidates.push(placement);
+                    }
+                }
+            }
+        }
+
+        if (candidates.length === 0) {
+            return { actions: ['hardDrop'], score: -999999, evaluatedCount: 0, target: null };
+        }
+
+        let bestCandidate = null;
+        let bestScore = -Infinity;
+
+        candidates.forEach(candidate => {
+            const simResult = simulateCandidate(this.game, candidate);
+            if (simResult !== null) {
+                candidate.score = simResult.score;
+                candidate.features = simResult.features;
+                candidate.targetMatrix = simResult.finalMatrix;
+                if (simResult.score > bestScore) {
+                    bestScore = simResult.score;
+                    bestCandidate = candidate;
+                }
+            }
+        });
+
+        if (!bestCandidate) {
+            return { actions: ['hardDrop'], score: -999999, evaluatedCount: candidates.length, target: null };
+        }
+
+        return {
+            actions: bestCandidate.actions,
+            score: bestCandidate.score,
+            evaluatedCount: candidates.length,
+            target: {
+                x: bestCandidate.x,
+                y: bestCandidate.y,
+                rot: bestCandidate.rot,
+                type: this.game.currentPiece.type,
+                matrix: bestCandidate.targetMatrix
+            }
+        };
+    }
+}
+
+
+// --- BATTLE MANAGER ---
+
+class BattleManager {
+    constructor(player, bot) {
+        this.player = player;
+        this.bot = bot;
+
+        // Load scores from localStorage
+        this.playerWins = parseInt(localStorage.getItem('vs_player_wins') || '0');
+        this.botWins = parseInt(localStorage.getItem('vs_bot_wins') || '0');
+
+        // Queues: Array of { lines: number, hole: number }
+        this.playerGarbageQueue = [];
+        this.botGarbageQueue = [];
+
+        this.matchInProgress = false;
+
+        this.setupCallbacks();
+        this.updateScoreUI();
+    }
+
+    setupCallbacks() {
+        // Player callbacks
+        this.player.onAttackGenerated = (attackPower) => {
+            if (this.player.currentMode !== 'VS_BOT') return;
+            this.handleAttack(this.player, this.bot, attackPower, this.playerGarbageQueue, this.botGarbageQueue);
+        };
+
+        this.player.onGarbageResolve = () => {
+            if (this.player.currentMode !== 'VS_BOT') return;
+            this.resolveGarbage(this.player, this.playerGarbageQueue);
+        };
+
+        this.player.onGameOver = (reason) => {
+            if (this.player.currentMode !== 'VS_BOT') return;
+            this.handleGameOver(this.bot, this.player, 'BOT', 'PLAYER');
+        };
+
+        // Bot callbacks
+        this.bot.onAttackGenerated = (attackPower) => {
+            if (this.bot.currentMode !== 'VS_BOT') return;
+            this.handleAttack(this.bot, this.player, attackPower, this.botGarbageQueue, this.playerGarbageQueue);
+        };
+
+        this.bot.onGarbageResolve = () => {
+            if (this.bot.currentMode !== 'VS_BOT') return;
+            this.resolveGarbage(this.bot, this.botGarbageQueue);
+        };
+
+        this.bot.onGameOver = (reason) => {
+            if (this.bot.currentMode !== 'VS_BOT') return;
+            this.handleGameOver(this.player, this.bot, 'PLAYER', 'BOT');
+        };
+    }
+
+    handleAttack(attacker, defender, attackPower, attackerQueue, defenderQueue) {
+        if (!this.matchInProgress) return;
+
+        let remainingAttack = attackPower;
+
+        // 1. Garbage cancellation (blocking)
+        // If there is pending garbage in the attacker's own queue, cancel it first.
+        while (remainingAttack > 0 && attackerQueue.length > 0) {
+            let firstPacket = attackerQueue[0];
+            if (firstPacket.lines > remainingAttack) {
+                firstPacket.lines -= remainingAttack;
+                remainingAttack = 0;
+            } else {
+                remainingAttack -= firstPacket.lines;
+                attackerQueue.shift();
+            }
+        }
+
+        // Update attacker's visual damage bar (botAttackQueue represents total queued lines)
+        attacker.botAttackQueue = attackerQueue.reduce((sum, p) => sum + p.lines, 0);
+        if (attacker.onUIUpdate) attacker.onUIUpdate();
+
+        // 2. Transfer remaining attack to defender's queue
+        if (remainingAttack > 0) {
+            const hole = Math.floor(Math.random() * 10);
+            defenderQueue.push({ lines: remainingAttack, hole: hole });
+            
+            // Update defender's visual damage bar
+            defender.botAttackQueue = defenderQueue.reduce((sum, p) => sum + p.lines, 0);
+            if (defender.onUIUpdate) defender.onUIUpdate();
+        }
+    }
+
+    resolveGarbage(recipient, queue) {
+        if (!this.matchInProgress || queue.length === 0) return;
+
+        let spawnAmt = 0;
+        let linesToSpawn = []; // Array of hole indices
+
+        // Spawn up to 8 lines at once (standard modern limit/existing Survival mode limit)
+        while (spawnAmt < 8 && queue.length > 0) {
+            let firstPacket = queue[0];
+            let take = Math.min(8 - spawnAmt, firstPacket.lines);
+            
+            for (let i = 0; i < take; i++) {
+                linesToSpawn.push(firstPacket.hole);
+            }
+            
+            spawnAmt += take;
+            firstPacket.lines -= take;
+            if (firstPacket.lines <= 0) {
+                queue.shift();
+            }
+        }
+
+        // Shift rows up and insert garbage at the bottom
+        for (let holeIdx of linesToSpawn) {
+            recipient.grid.shift();
+            let row = Array(10).fill(8); // 8 is garbage block color
+            row[holeIdx] = 0;
+            recipient.grid.push(row);
+        }
+
+        // Update remaining queued attack count
+        recipient.botAttackQueue = queue.reduce((sum, p) => sum + p.lines, 0);
+        if (recipient.onUIUpdate) recipient.onUIUpdate();
+    }
+
+    handleGameOver(winnerEngine, loserEngine, winnerName, loserName) {
+        if (!this.matchInProgress) return;
+        this.matchInProgress = false;
+
+        // Set game state inactive for both
+        this.player.gameActive = false;
+        this.bot.gameActive = false;
+
+        // Stop bot movements
+        if (this.bot.onGameOverStop) {
+            this.bot.onGameOverStop();
+        }
+
+        // Set match outcome
+        if (winnerName === 'PLAYER') {
+            this.playerWins++;
+            localStorage.setItem('vs_player_wins', this.playerWins.toString());
+            this.player.matchResult = 'WIN';
+            this.bot.matchResult = 'LOSE';
+        } else if (winnerName === 'BOT') {
+            this.botWins++;
+            localStorage.setItem('vs_bot_wins', this.botWins.toString());
+            this.player.matchResult = 'LOSE';
+            this.bot.matchResult = 'WIN';
+        }
+
+        this.updateScoreUI();
+
+        if (this.player.onUIUpdate) this.player.onUIUpdate();
+        if (this.bot.onUIUpdate) this.bot.onUIUpdate();
+    }
+
+    startNewMatch() {
+        this.playerGarbageQueue = [];
+        this.botGarbageQueue = [];
+        this.player.botAttackQueue = 0;
+        this.bot.botAttackQueue = 0;
+        this.player.matchResult = null;
+        this.bot.matchResult = null;
+        this.matchInProgress = true;
+        this.updateScoreUI();
+    }
+
+    updateScoreUI() {
+        const playerWinsEl = document.getElementById('playerWinsLabel');
+        const botWinsEl = document.getElementById('botWinsLabel');
+        if (playerWinsEl) playerWinsEl.innerText = this.playerWins;
+        if (botWinsEl) botWinsEl.innerText = this.botWins;
+    }
+}
+
 
 // --- APP ---
+
 
 
 
@@ -1796,6 +2651,53 @@ const renderer = playerRenderer;
 
 const inputHandler = new KeyboardInputProvider();
 inputHandler.attach(playerEngine);
+
+const botInputProvider = new BotInputProvider();
+botInputProvider.attach(botEngine);
+
+const botScheduler = new PPSScheduler(botInputProvider);
+const botAI = new DebugAI(botEngine, botScheduler);
+
+const battleManager = new BattleManager(playerEngine, botEngine);
+botEngine.onGameOverStop = () => {
+    botScheduler.clearQueue();
+    botAI.lastPiece = null;
+};
+
+// Telemetry tracking for the bot's actual Pieces Per Second
+class BotTelemetry {
+    constructor() {
+        this.pieceTimestamps = []; // Array of active game time timestamps (ms) when pieces were placed
+        this.lastPiecesPlaced = 0;
+    }
+
+    reset() {
+        this.pieceTimestamps = [];
+        this.lastPiecesPlaced = 0;
+    }
+
+    recordPiece(elapsedTime) {
+        this.pieceTimestamps.push(elapsedTime);
+    }
+
+    getActualPPS(elapsedTime) {
+        const cutoff = elapsedTime - 30000;
+        this.pieceTimestamps = this.pieceTimestamps.filter(t => t >= cutoff);
+
+        const count = this.pieceTimestamps.length;
+        if (count === 0) return 0;
+
+        const firstTime = this.pieceTimestamps[0];
+        const activeDurationMs = Math.max(1000, elapsedTime - firstTime);
+        const activeDurationSec = activeDurationMs / 1000;
+
+        return count / activeDurationSec;
+    }
+}
+
+const botTelemetry = new BotTelemetry();
+let botPlayTime = 0;
+let lastDiagnosticTime = 0;
 
 // Helper: Format milliseconds into MM:SS.hh
 function formatTime(ms) {
@@ -1881,6 +2783,14 @@ function selectMode(modeName) {
     closeModal();
     playerEngine.reset();
     botEngine.reset();
+    botScheduler.clearQueue();
+    botAI.lastPiece = null;
+    botTelemetry.reset();
+    botPlayTime = 0;
+    lastDiagnosticTime = 0;
+    if (modeName === 'VS_BOT') {
+        battleManager.startNewMatch();
+    }
 }
 
 // Global hook for inline HTML onclick attributes
@@ -1891,6 +2801,14 @@ window.game = {
     reset: () => {
         playerEngine.reset();
         botEngine.reset();
+        botScheduler.clearQueue();
+        botAI.lastPiece = null;
+        botTelemetry.reset();
+        botPlayTime = 0;
+        lastDiagnosticTime = 0;
+        if (playerEngine.currentMode === 'VS_BOT') {
+            battleManager.startNewMatch();
+        }
     },
     startRebind: (action) => inputHandler.startRebind(action)
 };
@@ -1922,6 +2840,40 @@ document.getElementById('sdfInput').addEventListener('input', updateSettings);
 const delayInputEl = document.getElementById('clearDelayInput');
 if (delayInputEl) delayInputEl.addEventListener('input', updateSettings);
 
+const sidebarPpsEl = document.getElementById('botPpsInput');
+const vsPpsEl = document.getElementById('vsBotPpsInput');
+const vsLabelEl = document.getElementById('vsBotPpsLabel');
+
+function syncBotPps(val) {
+    let num = parseFloat(val) || 3.0;
+    num = Math.max(0.5, Math.min(15.0, num));
+    
+    if (sidebarPpsEl && parseFloat(sidebarPpsEl.value) !== num) {
+        sidebarPpsEl.value = num.toFixed(1);
+    }
+    if (vsPpsEl && parseFloat(vsPpsEl.value) !== num) {
+        vsPpsEl.value = num;
+    }
+    if (vsLabelEl) {
+        vsLabelEl.innerText = num.toFixed(1);
+    }
+    
+    if (botScheduler) {
+        botScheduler.setPPS(num);
+    }
+}
+
+if (sidebarPpsEl) {
+    sidebarPpsEl.addEventListener('input', (e) => {
+        syncBotPps(e.target.value);
+    });
+}
+if (vsPpsEl) {
+    vsPpsEl.addEventListener('input', (e) => {
+        syncBotPps(e.target.value);
+    });
+}
+
 // Register skin changes
 const skinSelect = document.getElementById('skinSelect');
 if (skinSelect) {
@@ -1951,6 +2903,14 @@ window.addEventListener('keydown', (e) => {
             e.preventDefault();
             playerEngine.reset();
             botEngine.reset();
+            botScheduler.clearQueue();
+            botAI.lastPiece = null;
+            botTelemetry.reset();
+            botPlayTime = 0;
+            lastDiagnosticTime = 0;
+            if (playerEngine.currentMode === 'VS_BOT') {
+                battleManager.startNewMatch();
+            }
             return;
         }
     }
@@ -2161,6 +3121,9 @@ updateSettings();
 initKeyBindLabels();
 toggleLayout(playerEngine.currentMode);
 
+// Sync bot PPS settings on startup
+syncBotPps(3.0);
+
 // Game loop
 let lastTime = performance.now();
 
@@ -2186,12 +3149,48 @@ function renderLoop(currentTime) {
         playerEngine.accumulator -= FIXED_TICK_MS;
     }
 
-    // Fixed timestep execution for Bot (only outside VS_BOT mode in Phase 2 to keep it static)
-    if (playerEngine.currentMode !== 'VS_BOT') {
-        botEngine.accumulator += dt;
-        while (botEngine.accumulator >= FIXED_TICK_MS) {
-            botEngine.update(FIXED_TICK_MS);
-            botEngine.accumulator -= FIXED_TICK_MS;
+    // Fixed timestep execution for Bot (runs in all modes in Phase 3)
+    botEngine.accumulator += dt;
+    while (botEngine.accumulator >= FIXED_TICK_MS) {
+        botEngine.update(FIXED_TICK_MS);
+        botEngine.accumulator -= FIXED_TICK_MS;
+    }
+
+    // Update Bot AI (updates PPS Scheduler and schedules movements)
+    if (playerEngine.currentMode === 'VS_BOT') {
+        botAI.update(dt);
+
+        // Record pieces and update telemetry
+        if (botEngine.gameActive && !botEngine.countdownActive) {
+            if (botEngine.piecesPlaced > botTelemetry.lastPiecesPlaced) {
+                const numPlaced = botEngine.piecesPlaced - botTelemetry.lastPiecesPlaced;
+                for (let i = 0; i < numPlaced; i++) {
+                    botTelemetry.recordPiece(botEngine.elapsedTime);
+                }
+                botTelemetry.lastPiecesPlaced = botEngine.piecesPlaced;
+            }
+
+            const actualPps = botTelemetry.getActualPPS(botEngine.elapsedTime);
+            const actualPpsEl = document.getElementById('actualPpsLabel');
+            const targetPpsEl = document.getElementById('targetPpsLabel');
+            if (actualPpsEl) {
+                actualPpsEl.innerText = actualPps.toFixed(2);
+            }
+            if (targetPpsEl) {
+                targetPpsEl.innerText = botScheduler.pps.toFixed(1);
+            }
+
+            // Periodic 30s diagnostics log and accuracy compare
+            botPlayTime += dt;
+            if (botPlayTime - lastDiagnosticTime >= 30000) {
+                const targetPps = botScheduler.pps;
+                const diffPct = Math.abs(actualPps - targetPps) / targetPps * 100;
+                console.log(`[BOT TELEMETRY] 30s Window. Target: ${targetPps.toFixed(1)} PPS, Actual: ${actualPps.toFixed(2)} PPS (Discrepancy: ${diffPct.toFixed(1)}%)`);
+                if (diffPct > 5) {
+                    console.warn(`[BOT TELEMETRY WARNING] Discrepancy exceeds 5%! Target: ${targetPps.toFixed(1)}, Measured: ${actualPps.toFixed(2)} (Diff: ${diffPct.toFixed(1)}%). Source of discrepancy: Frame scheduling jitter or browser/CPU lag.`);
+                }
+                lastDiagnosticTime = botPlayTime;
+            }
         }
     }
 
@@ -2202,6 +3201,12 @@ function renderLoop(currentTime) {
     updateKeyOverlay(dt);
 
     // Render Canvases
+    const debugCheckbox = document.getElementById('aiDebugOverlayCheckbox');
+    const showOverlay = debugCheckbox ? debugCheckbox.checked : false;
+    if (botEngine.aiDebugData) {
+        botEngine.aiDebugData.show = showOverlay;
+    }
+
     if (playerEngine.currentMode === 'VS_BOT') {
         vsPlayerRenderer.renderGame(playerEngine);
         vsBotRenderer.renderGame(botEngine);

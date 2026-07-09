@@ -117,6 +117,37 @@ export class Renderer {
             mainCtx.restore();
         }
 
+        // Draw VS Bot Match Result Overlay
+        if (!engine.gameActive && engine.currentMode === 'VS_BOT' && engine.matchResult) {
+            mainCtx.save();
+            mainCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+            
+            mainCtx.textAlign = 'center';
+            mainCtx.textBaseline = 'middle';
+            mainCtx.shadowColor = 'rgba(0,0,0,0.9)';
+            mainCtx.shadowBlur = 12;
+            
+            if (engine.matchResult === 'WIN') {
+                mainCtx.fillStyle = '#00f0f0';
+                mainCtx.font = 'bold 36px monospace';
+                mainCtx.fillText('VICTORY', mainCanvas.width / 2, mainCanvas.height / 2);
+                
+                mainCtx.fillStyle = '#ffffff';
+                mainCtx.font = '12px monospace';
+                mainCtx.fillText('PRESS R TO REMATCH', mainCanvas.width / 2, mainCanvas.height / 2 + 50);
+            } else if (engine.matchResult === 'LOSE') {
+                mainCtx.fillStyle = '#ff33aa';
+                mainCtx.font = 'bold 36px monospace';
+                mainCtx.fillText('DEFEAT', mainCanvas.width / 2, mainCanvas.height / 2);
+                
+                mainCtx.fillStyle = '#ffffff';
+                mainCtx.font = '12px monospace';
+                mainCtx.fillText('PRESS R TO REMATCH', mainCanvas.width / 2, mainCanvas.height / 2 + 50);
+            }
+            mainCtx.restore();
+        }
+
         // Render Hold Canvas
         const holdCtx = this.holdCtx;
         const holdCanvas = this.holdCanvas;
@@ -154,6 +185,71 @@ export class Renderer {
                     }
                 }
             }
+        }
+
+        // AI Debug Overlay rendering (Target placement preview and Heuristic details)
+        if (engine.aiDebugData && engine.aiDebugData.show) {
+            // 1. Draw target placement translucent highlight on the main board
+            if (engine.aiDebugData.target) {
+                const target = engine.aiDebugData.target;
+                const matrix = target.matrix;
+                
+                if (matrix) {
+                    mainCtx.save();
+                    mainCtx.globalAlpha = 0.5;
+                    mainCtx.strokeStyle = '#00ffff'; // Cyan highlight outline
+                    mainCtx.lineWidth = 2;
+                    
+                    for (let r = 0; r < matrix.length; r++) {
+                        for (let c = 0; c < matrix[r].length; c++) {
+                            if (matrix[r][c] !== 0 && target.y + r >= 0) {
+                                const blockX = (target.x + c) * 30;
+                                const blockY = (target.y + r) * 30;
+                                
+                                // Soft neon cyan fill
+                                mainCtx.fillStyle = 'rgba(0, 240, 240, 0.3)';
+                                mainCtx.fillRect(blockX, blockY, 30, 30);
+                                mainCtx.strokeRect(blockX + 1, blockY + 1, 28, 28);
+                            }
+                        }
+                    }
+                    mainCtx.restore();
+                }
+            }
+
+            // 2. Draw Floating Telemetry Card
+            mainCtx.save();
+            mainCtx.fillStyle = 'rgba(10, 10, 12, 0.85)';
+            mainCtx.strokeStyle = '#ff33aa';
+            mainCtx.lineWidth = 1.5;
+            
+            const boxX = 10;
+            const boxY = 10;
+            const boxW = 280;
+            const boxH = 82;
+            
+            mainCtx.fillRect(boxX, boxY, boxW, boxH);
+            mainCtx.strokeRect(boxX, boxY, boxW, boxH);
+            
+            // Header
+            mainCtx.fillStyle = '#ff33aa';
+            mainCtx.font = 'bold 11px monospace';
+            mainCtx.fillText('🤖 AI DEBUG PANEL', boxX + 12, boxY + 20);
+            
+            // Stats Text
+            mainCtx.fillStyle = '#ffffff';
+            mainCtx.font = '11px sans-serif';
+            mainCtx.fillText(`Evaluated Placements: ${engine.aiDebugData.evaluatedCount}`, boxX + 12, boxY + 38);
+            mainCtx.fillText(`Best Heuristic Score: ${engine.aiDebugData.score.toFixed(2)}`, boxX + 12, boxY + 54);
+            
+            if (engine.aiDebugData.target) {
+                const rotNames = ['0°', 'CW (90°)', '180°', 'CCW (270°)'];
+                const rotName = rotNames[engine.aiDebugData.target.rot] || '0°';
+                mainCtx.fillText(`Target: Col ${engine.aiDebugData.target.x}, Row ${engine.aiDebugData.target.y}, Rot: ${rotName}`, boxX + 12, boxY + 70);
+            } else {
+                mainCtx.fillText('Target: Searching...', boxX + 12, boxY + 70);
+            }
+            mainCtx.restore();
         }
     }
 

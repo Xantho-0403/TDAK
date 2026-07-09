@@ -24,6 +24,7 @@ const constantsJs = processJsFile('js/constants.js');
 const engineJs = processJsFile('js/game-engine.js');
 const rendererJs = processJsFile('js/renderer.js');
 const inputJs = processJsFile('js/input.js');
+const battleManagerJs = processJsFile('js/battle-manager.js');
 const appJs = processJsFile('js/app.js');
 
 // Concatenate in order
@@ -36,6 +37,8 @@ const bundledJs = [
     rendererJs,
     '// --- INPUT HANDLER ---',
     inputJs,
+    '// --- BATTLE MANAGER ---',
+    battleManagerJs,
     '// --- APP ---',
     appJs
 ].join('\n\n');

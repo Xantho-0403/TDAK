@@ -1,6 +1,7 @@
 import { GameInstance } from './game-engine.js';
 import { Renderer } from './renderer.js';
-import { KeyboardInputProvider } from './input.js';
+import { KeyboardInputProvider, BotInputProvider, PPSScheduler, DebugAI } from './input.js';
+import { BattleManager } from './battle-manager.js';
 
 // Global instances
 const playerEngine = new GameInstance();
@@ -21,6 +22,53 @@ const renderer = playerRenderer;
 
 const inputHandler = new KeyboardInputProvider();
 inputHandler.attach(playerEngine);
+
+const botInputProvider = new BotInputProvider();
+botInputProvider.attach(botEngine);
+
+const botScheduler = new PPSScheduler(botInputProvider);
+const botAI = new DebugAI(botEngine, botScheduler);
+
+const battleManager = new BattleManager(playerEngine, botEngine);
+botEngine.onGameOverStop = () => {
+    botScheduler.clearQueue();
+    botAI.lastPiece = null;
+};
+
+// Telemetry tracking for the bot's actual Pieces Per Second
+class BotTelemetry {
+    constructor() {
+        this.pieceTimestamps = []; // Array of active game time timestamps (ms) when pieces were placed
+        this.lastPiecesPlaced = 0;
+    }
+
+    reset() {
+        this.pieceTimestamps = [];
+        this.lastPiecesPlaced = 0;
+    }
+
+    recordPiece(elapsedTime) {
+        this.pieceTimestamps.push(elapsedTime);
+    }
+
+    getActualPPS(elapsedTime) {
+        const cutoff = elapsedTime - 30000;
+        this.pieceTimestamps = this.pieceTimestamps.filter(t => t >= cutoff);
+
+        const count = this.pieceTimestamps.length;
+        if (count === 0) return 0;
+
+        const firstTime = this.pieceTimestamps[0];
+        const activeDurationMs = Math.max(1000, elapsedTime - firstTime);
+        const activeDurationSec = activeDurationMs / 1000;
+
+        return count / activeDurationSec;
+    }
+}
+
+const botTelemetry = new BotTelemetry();
+let botPlayTime = 0;
+let lastDiagnosticTime = 0;
 
 // Helper: Format milliseconds into MM:SS.hh
 function formatTime(ms) {
@@ -106,6 +154,14 @@ function selectMode(modeName) {
     closeModal();
     playerEngine.reset();
     botEngine.reset();
+    botScheduler.clearQueue();
+    botAI.lastPiece = null;
+    botTelemetry.reset();
+    botPlayTime = 0;
+    lastDiagnosticTime = 0;
+    if (modeName === 'VS_BOT') {
+        battleManager.startNewMatch();
+    }
 }
 
 // Global hook for inline HTML onclick attributes
@@ -116,6 +172,14 @@ window.game = {
     reset: () => {
         playerEngine.reset();
         botEngine.reset();
+        botScheduler.clearQueue();
+        botAI.lastPiece = null;
+        botTelemetry.reset();
+        botPlayTime = 0;
+        lastDiagnosticTime = 0;
+        if (playerEngine.currentMode === 'VS_BOT') {
+            battleManager.startNewMatch();
+        }
     },
     startRebind: (action) => inputHandler.startRebind(action)
 };
@@ -147,6 +211,40 @@ document.getElementById('sdfInput').addEventListener('input', updateSettings);
 const delayInputEl = document.getElementById('clearDelayInput');
 if (delayInputEl) delayInputEl.addEventListener('input', updateSettings);
 
+const sidebarPpsEl = document.getElementById('botPpsInput');
+const vsPpsEl = document.getElementById('vsBotPpsInput');
+const vsLabelEl = document.getElementById('vsBotPpsLabel');
+
+function syncBotPps(val) {
+    let num = parseFloat(val) || 3.0;
+    num = Math.max(0.5, Math.min(15.0, num));
+    
+    if (sidebarPpsEl && parseFloat(sidebarPpsEl.value) !== num) {
+        sidebarPpsEl.value = num.toFixed(1);
+    }
+    if (vsPpsEl && parseFloat(vsPpsEl.value) !== num) {
+        vsPpsEl.value = num;
+    }
+    if (vsLabelEl) {
+        vsLabelEl.innerText = num.toFixed(1);
+    }
+    
+    if (botScheduler) {
+        botScheduler.setPPS(num);
+    }
+}
+
+if (sidebarPpsEl) {
+    sidebarPpsEl.addEventListener('input', (e) => {
+        syncBotPps(e.target.value);
+    });
+}
+if (vsPpsEl) {
+    vsPpsEl.addEventListener('input', (e) => {
+        syncBotPps(e.target.value);
+    });
+}
+
 // Register skin changes
 const skinSelect = document.getElementById('skinSelect');
 if (skinSelect) {
@@ -176,6 +274,14 @@ window.addEventListener('keydown', (e) => {
             e.preventDefault();
             playerEngine.reset();
             botEngine.reset();
+            botScheduler.clearQueue();
+            botAI.lastPiece = null;
+            botTelemetry.reset();
+            botPlayTime = 0;
+            lastDiagnosticTime = 0;
+            if (playerEngine.currentMode === 'VS_BOT') {
+                battleManager.startNewMatch();
+            }
             return;
         }
     }
@@ -386,6 +492,9 @@ updateSettings();
 initKeyBindLabels();
 toggleLayout(playerEngine.currentMode);
 
+// Sync bot PPS settings on startup
+syncBotPps(3.0);
+
 // Game loop
 let lastTime = performance.now();
 
@@ -411,12 +520,48 @@ function renderLoop(currentTime) {
         playerEngine.accumulator -= FIXED_TICK_MS;
     }
 
-    // Fixed timestep execution for Bot (only outside VS_BOT mode in Phase 2 to keep it static)
-    if (playerEngine.currentMode !== 'VS_BOT') {
-        botEngine.accumulator += dt;
-        while (botEngine.accumulator >= FIXED_TICK_MS) {
-            botEngine.update(FIXED_TICK_MS);
-            botEngine.accumulator -= FIXED_TICK_MS;
+    // Fixed timestep execution for Bot (runs in all modes in Phase 3)
+    botEngine.accumulator += dt;
+    while (botEngine.accumulator >= FIXED_TICK_MS) {
+        botEngine.update(FIXED_TICK_MS);
+        botEngine.accumulator -= FIXED_TICK_MS;
+    }
+
+    // Update Bot AI (updates PPS Scheduler and schedules movements)
+    if (playerEngine.currentMode === 'VS_BOT') {
+        botAI.update(dt);
+
+        // Record pieces and update telemetry
+        if (botEngine.gameActive && !botEngine.countdownActive) {
+            if (botEngine.piecesPlaced > botTelemetry.lastPiecesPlaced) {
+                const numPlaced = botEngine.piecesPlaced - botTelemetry.lastPiecesPlaced;
+                for (let i = 0; i < numPlaced; i++) {
+                    botTelemetry.recordPiece(botEngine.elapsedTime);
+                }
+                botTelemetry.lastPiecesPlaced = botEngine.piecesPlaced;
+            }
+
+            const actualPps = botTelemetry.getActualPPS(botEngine.elapsedTime);
+            const actualPpsEl = document.getElementById('actualPpsLabel');
+            const targetPpsEl = document.getElementById('targetPpsLabel');
+            if (actualPpsEl) {
+                actualPpsEl.innerText = actualPps.toFixed(2);
+            }
+            if (targetPpsEl) {
+                targetPpsEl.innerText = botScheduler.pps.toFixed(1);
+            }
+
+            // Periodic 30s diagnostics log and accuracy compare
+            botPlayTime += dt;
+            if (botPlayTime - lastDiagnosticTime >= 30000) {
+                const targetPps = botScheduler.pps;
+                const diffPct = Math.abs(actualPps - targetPps) / targetPps * 100;
+                console.log(`[BOT TELEMETRY] 30s Window. Target: ${targetPps.toFixed(1)} PPS, Actual: ${actualPps.toFixed(2)} PPS (Discrepancy: ${diffPct.toFixed(1)}%)`);
+                if (diffPct > 5) {
+                    console.warn(`[BOT TELEMETRY WARNING] Discrepancy exceeds 5%! Target: ${targetPps.toFixed(1)}, Measured: ${actualPps.toFixed(2)} (Diff: ${diffPct.toFixed(1)}%). Source of discrepancy: Frame scheduling jitter or browser/CPU lag.`);
+                }
+                lastDiagnosticTime = botPlayTime;
+            }
         }
     }
 
@@ -427,6 +572,12 @@ function renderLoop(currentTime) {
     updateKeyOverlay(dt);
 
     // Render Canvases
+    const debugCheckbox = document.getElementById('aiDebugOverlayCheckbox');
+    const showOverlay = debugCheckbox ? debugCheckbox.checked : false;
+    if (botEngine.aiDebugData) {
+        botEngine.aiDebugData.show = showOverlay;
+    }
+
     if (playerEngine.currentMode === 'VS_BOT') {
         vsPlayerRenderer.renderGame(playerEngine);
         vsBotRenderer.renderGame(botEngine);

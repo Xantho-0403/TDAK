@@ -56,6 +56,11 @@ export class GameInstance {
         this.onAction = null;
         this.onUIUpdate = null;
         this.onNewBest = null;
+        this.onAttackGenerated = null;
+        this.onGarbageResolve = null;
+        this.onGameOver = null;
+        this.onGameOverStop = null;
+        this.matchResult = null;
 
         this.init();
     }
@@ -271,6 +276,7 @@ export class GameInstance {
             this.gameActive = false;
             if (this.onAction) this.onAction("TOP OUT!");
             if (this.onUIUpdate) this.onUIUpdate();
+            if (this.onGameOver) this.onGameOver("TOP OUT");
         }
     }
 
@@ -430,6 +436,7 @@ export class GameInstance {
             this.gameActive = false;
             if (this.onAction) this.onAction("LOCK OUT!");
             if (this.onUIUpdate) this.onUIUpdate();
+            if (this.onGameOver) this.onGameOver("LOCK OUT");
             return;
         }
 
@@ -480,6 +487,9 @@ export class GameInstance {
             this.currentSpike += attackPower;
             this.spikeTimer = 2000; 
             this.totalAttackSent += attackPower;
+            if (this.currentMode === 'VS_BOT' && this.onAttackGenerated) {
+                this.onAttackGenerated(attackPower);
+            }
         }
 
         if (cleared > 0) {
@@ -502,6 +512,13 @@ export class GameInstance {
 
             if (this.onAction) this.onAction(`${spinLabel}${this.combo - 1} COMBO!`);
         } else {
+            if (this.currentMode === 'VS_BOT') {
+                this.combo = 0;
+                if (this.onGarbageResolve) {
+                    this.onGarbageResolve();
+                }
+            }
+
             if (this.currentMode === '4W') {
                 this.gameActive = false;
                 let finalCombo = this.combo > 0 ? this.combo - 1 : 0;

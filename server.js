@@ -42,6 +42,6 @@ http.createServer((req, res) => {
             res.end(content, 'utf-8');
         }
     });
-}).listen(PORT, () => {
-    console.log(`Static file server running on http://localhost:${PORT}/`);
+}).listen(PORT, '0.0.0.0', () => {
+    console.log(`Static file server running on http://0.0.0.0:${PORT}/`);
 });
