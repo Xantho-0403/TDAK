@@ -1,5 +1,24 @@
-export class KeyboardInput {
+export class InputProvider {
     constructor() {
+        this.game = null;
+    }
+
+    attach(game) {
+        this.game = game;
+    }
+
+    detach() {
+        this.game = null;
+    }
+
+    update(dt) {
+        // Abstract method to be overridden
+    }
+}
+
+export class KeyboardInputProvider extends InputProvider {
+    constructor() {
+        super();
         this.inputs = { left: false, right: false, down: false };
         this.activeDirection = 'none';
         this.dasTimer = 0;
@@ -67,36 +86,37 @@ export class KeyboardInput {
         }
     }
 
-    handleKeyDown(code, engine) {
+    handleKeyDown(code) {
         if (this.isModalOpen) return; 
         if (this.rebindTarget) { this.executeRebind(code); return; }
-        if (engine.countdownActive) return; 
+        if (!this.game || this.game.countdownActive) return; 
 
         const action = this.keyBindings[code];
         if (!action) return;
 
         if (action === 'left') {
             this.inputs.left = true; this.activeDirection = 'left';
-            this.dasTimer = 0; this.arrTimer = 0; engine.tryMove(-1, 0);
+            this.dasTimer = 0; this.arrTimer = 0; this.game.moveLeft();
         } else if (action === 'right') {
             this.inputs.right = true; this.activeDirection = 'right';
-            this.dasTimer = 0; this.arrTimer = 0; engine.tryMove(1, 0);
+            this.dasTimer = 0; this.arrTimer = 0; this.game.moveRight();
         } else if (action === 'down') {
             this.inputs.down = true;
+            this.game.setSoftDrop(true);
         } else if (action === 'hardDrop') {
-            engine.hardDrop();
+            this.game.hardDrop();
             this.keyFlash.hardDrop = 150;
         } else if (action === 'cw') {
-            engine.rotate('CW');
+            this.game.rotateCW();
             this.keyFlash.cw = 150;
         } else if (action === 'ccw') {
-            engine.rotate('CCW');
+            this.game.rotateCCW();
             this.keyFlash.ccw = 150;
         } else if (action === 'rotate180') {
-            engine.rotate('180');
+            this.game.rotate180();
             this.keyFlash.rotate180 = 150;
         } else if (action === 'hold') {
-            engine.hold();
+            this.game.hold();
             this.keyFlash.hold = 150;
         }
     }
@@ -106,7 +126,10 @@ export class KeyboardInput {
         
         if (code === this.getKeyByAction('left')) this.inputs.left = false;
         if (code === this.getKeyByAction('right')) this.inputs.right = false;
-        if (code === this.getKeyByAction('down')) this.inputs.down = false;
+        if (code === this.getKeyByAction('down')) {
+            this.inputs.down = false;
+            if (this.game) this.game.setSoftDrop(false);
+        }
 
         if (this.inputs.left && !this.inputs.right) {
             if (this.activeDirection !== 'left') { this.activeDirection = 'left'; this.dasTimer = 0; this.arrTimer = 0; }
@@ -117,12 +140,11 @@ export class KeyboardInput {
         }
     }
 
-    update(dt, engine) {
-        if (!engine.gameActive || engine.countdownActive || this.isModalOpen) return;
+    update(dt) {
+        if (!this.game || !this.game.gameActive || this.game.countdownActive || this.isModalOpen) return;
 
-        engine.isSoftDropping = this.inputs.down;
-        if (this.inputs.down && this.sdf >= 41) {
-            while (engine.tryMove(0, 1)) {}
+        if (this.inputs.down && this.game.sdf >= 41) {
+            while (this.game.tryMove(0, 1)) {}
         }
 
         if (this.activeDirection !== 'none') {
@@ -130,12 +152,12 @@ export class KeyboardInput {
             if (this.dasTimer >= this.das) {
                 if (this.arr === 0) {
                     let step = (this.activeDirection === 'left') ? -1 : 1;
-                    while (engine.tryMove(step, 0)) {}
+                    while (this.game.tryMove(step, 0)) {}
                 } else {
                     this.arrTimer += dt;
                     let step = (this.activeDirection === 'left') ? -1 : 1;
                     while (this.arrTimer >= this.arr) {
-                        engine.tryMove(step, 0);
+                        this.game.tryMove(step, 0);
                         this.arrTimer -= this.arr;
                     }
                 }

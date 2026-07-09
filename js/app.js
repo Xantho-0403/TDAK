@@ -1,11 +1,26 @@
-import { TetrisGame } from './game-engine.js';
+import { GameInstance } from './game-engine.js';
 import { Renderer } from './renderer.js';
-import { KeyboardInput } from './input.js';
+import { KeyboardInputProvider } from './input.js';
 
 // Global instances
-const engine = new TetrisGame();
-const renderer = new Renderer();
-const inputHandler = new KeyboardInput();
+const playerEngine = new GameInstance();
+const botEngine = new GameInstance();
+
+// Maintain 'engine' alias for 100% backward compatibility with existing UI and logic
+const engine = playerEngine;
+
+const playerRenderer = new Renderer('tetrisCanvas', 'holdCanvas', 'nextCanvas');
+const botRenderer = new Renderer('botCanvas', null, null);
+
+// Symmetrical renderers for VS Bot mode
+const vsPlayerRenderer = new Renderer('vsPlayerCanvas', 'vsPlayerHoldCanvas', 'vsPlayerNextCanvas');
+const vsBotRenderer = new Renderer('vsBotCanvas', 'vsBotHoldCanvas', 'vsBotNextCanvas');
+
+// Maintain 'renderer' alias for backward compatibility with general hooks
+const renderer = playerRenderer;
+
+const inputHandler = new KeyboardInputProvider();
+inputHandler.attach(playerEngine);
 
 // Helper: Format milliseconds into MM:SS.hh
 function formatTime(ms) {
@@ -65,10 +80,32 @@ function closeModal() {
     document.getElementById('modeModal').classList.remove('open');
 }
 
+function toggleLayout(modeName) {
+    const sidebarLeft = document.querySelector('.sidebar-left');
+    const soloBoardWrapper = document.getElementById('soloBoardWrapper');
+    const sidebarRight = document.querySelector('.sidebar-right');
+    const vsBotLayout = document.getElementById('vsBotLayout');
+
+    if (modeName === 'VS_BOT') {
+        if (sidebarLeft) sidebarLeft.style.display = 'none';
+        if (soloBoardWrapper) soloBoardWrapper.style.display = 'none';
+        if (sidebarRight) sidebarRight.style.display = 'none';
+        if (vsBotLayout) vsBotLayout.style.display = 'flex';
+    } else {
+        if (sidebarLeft) sidebarLeft.style.display = 'flex';
+        if (soloBoardWrapper) soloBoardWrapper.style.display = 'flex';
+        if (sidebarRight) sidebarRight.style.display = 'flex';
+        if (vsBotLayout) vsBotLayout.style.display = 'none';
+    }
+}
+
 function selectMode(modeName) {
-    engine.currentMode = modeName;
+    playerEngine.currentMode = modeName;
+    botEngine.currentMode = modeName;
+    toggleLayout(modeName);
     closeModal();
-    engine.reset();
+    playerEngine.reset();
+    botEngine.reset();
 }
 
 // Global hook for inline HTML onclick attributes
@@ -76,6 +113,10 @@ window.game = {
     openModal,
     closeModal,
     selectMode,
+    reset: () => {
+        playerEngine.reset();
+        botEngine.reset();
+    },
     startRebind: (action) => inputHandler.startRebind(action)
 };
 
@@ -88,8 +129,11 @@ function updateSettings() {
     const delayInput = document.getElementById('clearDelayInput');
     const clearDelay = delayInput ? (parseInt(delayInput.value) || 0) : 0;
     
-    engine.lineClearDelay = clearDelay;
-    engine.sdf = sdf;
+    playerEngine.lineClearDelay = clearDelay;
+    playerEngine.sdf = sdf;
+    botEngine.lineClearDelay = clearDelay;
+    botEngine.sdf = sdf;
+
     inputHandler.das = das;
     inputHandler.arr = arr;
     inputHandler.sdf = sdf;
@@ -106,10 +150,14 @@ if (delayInputEl) delayInputEl.addEventListener('input', updateSettings);
 // Register skin changes
 const skinSelect = document.getElementById('skinSelect');
 if (skinSelect) {
-    skinSelect.value = renderer.currentSkin;
+    skinSelect.value = playerRenderer.currentSkin;
     skinSelect.addEventListener('change', () => {
-        renderer.currentSkin = skinSelect.value;
-        localStorage.setItem('tetris_skin', renderer.currentSkin);
+        const selectedSkin = skinSelect.value;
+        playerRenderer.currentSkin = selectedSkin;
+        botRenderer.currentSkin = selectedSkin;
+        vsPlayerRenderer.currentSkin = selectedSkin;
+        vsBotRenderer.currentSkin = selectedSkin;
+        localStorage.setItem('tetris_skin', selectedSkin);
     });
 }
 
@@ -126,14 +174,15 @@ window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyR') {
         if (!inputHandler.rebindTarget) {
             e.preventDefault();
-            engine.reset();
+            playerEngine.reset();
+            botEngine.reset();
             return;
         }
     }
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code) || inputHandler.rebindTarget) {
         e.preventDefault();
     }
-    inputHandler.handleKeyDown(e.code, engine);
+    inputHandler.handleKeyDown(e.code);
 });
 
 window.addEventListener('keyup', (e) => {
@@ -159,8 +208,9 @@ function updateKeyOverlay(dt) {
 
     const setActive = (id, active) => {
         const el = document.getElementById(id);
-        if (!el) return;
-        el.classList.toggle('active', active);
+        if (el) el.classList.toggle('active', active);
+        const elVs = document.getElementById('vs-' + id);
+        if (elVs) elVs.classList.toggle('active', active);
     };
 
     setActive('key-left', inputHandler.inputs.left);
@@ -174,79 +224,138 @@ function updateKeyOverlay(dt) {
 }
 
 // Setup core callbacks for the engine
-engine.onAction = (text) => {
-    document.getElementById('actionDisplay').innerText = text;
+playerEngine.onAction = (text) => {
+    if (playerEngine.currentMode !== 'VS_BOT') {
+        const display = document.getElementById('actionDisplay');
+        if (display) display.innerText = text;
+    }
 };
 
-engine.onUIUpdate = () => {
-    document.getElementById('modeDisplay').innerText = engine.currentMode;
-    document.getElementById('timerDisplay').innerText = formatTime(engine.elapsedTime);
+playerEngine.onUIUpdate = () => {
+    if (playerEngine.currentMode === 'VS_BOT') {
+        const timerDisplay = document.getElementById('vsTimerDisplay');
+        if (timerDisplay) {
+            timerDisplay.innerText = formatTime(playerEngine.elapsedTime);
+        }
+        
+        const comboVal = document.getElementById('vsPlayerCombo');
+        if (comboVal) {
+            comboVal.innerText = playerEngine.combo > 0 ? playerEngine.combo - 1 : 0;
+        }
+        
+        const b2bVal = document.getElementById('vsPlayerB2B');
+        if (b2bVal) {
+            b2bVal.innerText = playerEngine.b2bCount > 0 ? `x${playerEngine.b2bCount}` : "Off";
+        }
+        
+        const attackVal = document.getElementById('vsPlayerAttack');
+        if (attackVal) {
+            attackVal.innerText = playerEngine.totalAttackSent;
+        }
 
-    const targetLabel = document.getElementById('targetLabel');
-    const comboDisplay = document.getElementById('comboDisplay');
-
-    if (engine.currentMode === '40L') {
-        targetLabel.innerText = "LINE LEFT";
-        comboDisplay.innerText = Math.max(0, 40 - engine.linesClearedTotal);
-    } else if (engine.currentMode === 'CHEESE') {
-        targetLabel.innerText = "CHEESE LEFT";
-        comboDisplay.innerText = engine.cheeseLinesRemaining;
-    } else if (engine.currentMode === 'SURVIVAL') {
-        targetLabel.innerText = "QUEUE / COMBO";
-        comboDisplay.innerText = `${engine.botAttackQueue} / ${engine.combo > 0 ? engine.combo - 1 : 0}`;
+        const damageBar = document.getElementById('vsPlayerDamageBar');
+        if (damageBar) {
+            const pct = Math.min(100, (playerEngine.botAttackQueue / 20) * 100);
+            damageBar.style.height = `${pct}%`;
+        }
     } else {
-        targetLabel.innerText = "COMBO";
-        comboDisplay.innerText = engine.combo > 0 ? engine.combo - 1 : 0;
-    }
+        document.getElementById('modeDisplay').innerText = playerEngine.currentMode;
+        document.getElementById('timerDisplay').innerText = formatTime(playerEngine.elapsedTime);
 
-    document.getElementById('b2bDisplay').innerText = engine.b2bCount > 0 ? `x${engine.b2bCount}` : "Off";
+        const targetLabel = document.getElementById('targetLabel');
+        const comboDisplay = document.getElementById('comboDisplay');
 
-    const ppsDisplay = document.getElementById('ppsDisplay');
-    if (ppsDisplay) {
-        if (engine.currentMode === '40L') {
-            const seconds = engine.elapsedTime / 1000;
-            const pps = seconds > 0 ? (engine.piecesPlaced / seconds) : 0;
-            ppsDisplay.style.display = 'block';
-            ppsDisplay.innerText = `PPS: ${pps.toFixed(2)}`;
+        if (playerEngine.currentMode === '40L') {
+            targetLabel.innerText = "LINE LEFT";
+            comboDisplay.innerText = Math.max(0, 40 - playerEngine.linesClearedTotal);
+        } else if (playerEngine.currentMode === 'CHEESE') {
+            targetLabel.innerText = "CHEESE LEFT";
+            comboDisplay.innerText = playerEngine.cheeseLinesRemaining;
+        } else if (playerEngine.currentMode === 'SURVIVAL') {
+            targetLabel.innerText = "QUEUE / COMBO";
+            comboDisplay.innerText = `${playerEngine.botAttackQueue} / ${playerEngine.combo > 0 ? playerEngine.combo - 1 : 0}`;
         } else {
-            ppsDisplay.style.display = 'none';
+            targetLabel.innerText = "COMBO";
+            comboDisplay.innerText = playerEngine.combo > 0 ? playerEngine.combo - 1 : 0;
         }
-    }
 
-    const spikeDisplay = document.getElementById('spikeDisplay');
-    if (spikeDisplay) {
-        if (engine.currentSpike >= 10) {
-            spikeDisplay.innerHTML = `<span class="spike-active">${engine.currentSpike}D SPIKE!</span>`;
-        } else if (engine.currentSpike > 0) {
-            spikeDisplay.innerHTML = `<span style="color: #ffaaaa; font-weight: bold;">${engine.currentSpike}D</span>`;
-        } else {
-            spikeDisplay.innerText = "0D";
+        document.getElementById('b2bDisplay').innerText = playerEngine.b2bCount > 0 ? `x${playerEngine.b2bCount}` : "Off";
+
+        const ppsDisplay = document.getElementById('ppsDisplay');
+        if (ppsDisplay) {
+            if (playerEngine.currentMode === '40L') {
+                const seconds = playerEngine.elapsedTime / 1000;
+                const pps = seconds > 0 ? (playerEngine.piecesPlaced / seconds) : 0;
+                ppsDisplay.style.display = 'block';
+                ppsDisplay.innerText = `PPS: ${pps.toFixed(2)}`;
+            } else {
+                ppsDisplay.style.display = 'none';
+            }
         }
-    }
 
-    // Bot attack gauge height in survival mode
-    const gaugeFill = document.getElementById('attackGauge');
-    if (gaugeFill) {
-        gaugeFill.style.height = `${(engine.botAttackQueue / 20) * 100}%`;
-    }
+        const spikeDisplay = document.getElementById('spikeDisplay');
+        if (spikeDisplay) {
+            if (playerEngine.currentSpike >= 10) {
+                spikeDisplay.innerHTML = `<span class="spike-active">${playerEngine.currentSpike}D SPIKE!</span>`;
+            } else if (playerEngine.currentSpike > 0) {
+                spikeDisplay.innerHTML = `<span style="color: #ffaaaa; font-weight: bold;">${playerEngine.currentSpike}D</span>`;
+            } else {
+                spikeDisplay.innerText = "0D";
+            }
+        }
 
-    // Toggle gauge and apm setting panels depending on mode
-    const gaugeArea = document.getElementById('survivalGaugeArea');
-    const settingArea = document.getElementById('survivalSettingArea');
-    if (gaugeArea) gaugeArea.style.display = (engine.currentMode === 'SURVIVAL') ? 'block' : 'none';
-    if (settingArea) settingArea.style.display = (engine.currentMode === 'SURVIVAL') ? 'block' : 'none';
+        // Bot attack gauge height in survival mode
+        const gaugeFill = document.getElementById('attackGauge');
+        if (gaugeFill) {
+            gaugeFill.style.height = `${(playerEngine.botAttackQueue / 20) * 100}%`;
+        }
+
+        // Toggle gauge, apm setting, and bot board column depending on mode
+        const gaugeArea = document.getElementById('survivalGaugeArea');
+        const settingArea = document.getElementById('survivalSettingArea');
+        if (gaugeArea) gaugeArea.style.display = (playerEngine.currentMode === 'SURVIVAL') ? 'block' : 'none';
+        if (settingArea) settingArea.style.display = (playerEngine.currentMode === 'SURVIVAL') ? 'block' : 'none';
+    }
 };
 
-engine.onNewBest = (modeName, scoreType, value) => {
+botEngine.onAction = (text) => {};
+
+botEngine.onUIUpdate = () => {
+    if (botEngine.currentMode === 'VS_BOT') {
+        const comboVal = document.getElementById('vsBotCombo');
+        if (comboVal) {
+            comboVal.innerText = botEngine.combo > 0 ? botEngine.combo - 1 : 0;
+        }
+        
+        const b2bVal = document.getElementById('vsBotB2B');
+        if (b2bVal) {
+            b2bVal.innerText = botEngine.b2bCount > 0 ? `x${botEngine.b2bCount}` : "Off";
+        }
+        
+        const attackVal = document.getElementById('vsBotAttack');
+        if (attackVal) {
+            attackVal.innerText = botEngine.totalAttackSent;
+        }
+
+        const damageBar = document.getElementById('vsBotDamageBar');
+        if (damageBar) {
+            const pct = Math.min(100, (botEngine.botAttackQueue / 20) * 100);
+            damageBar.style.height = `${pct}%`;
+        }
+    }
+};
+
+playerEngine.onNewBest = (modeName, scoreType, value) => {
+    if (modeName === 'VS_BOT') return;
     if (modeName === '40L') {
         const localBest = localStorage.getItem('best_record_40l');
         const isNewBest = !localBest || value < parseInt(localBest);
         if (isNewBest) {
             localStorage.setItem('best_record_40l', value);
             triggerPBFlash();
-            engine.onAction("🏆 NEW PB!");
+            playerEngine.onAction("🏆 NEW PB!");
         } else {
-            engine.onAction("FINISH!");
+            playerEngine.onAction("FINISH!");
         }
         saveSessionHistory(value);
     } else if (modeName === 'CHEESE') {
@@ -255,9 +364,9 @@ engine.onNewBest = (modeName, scoreType, value) => {
         if (isNewBest) {
             localStorage.setItem('best_record_cheese', value);
             triggerPBFlash();
-            engine.onAction("🏆 NEW PB!");
+            playerEngine.onAction("🏆 NEW PB!");
         } else {
-            engine.onAction("CHEESE ALL CLEARED!");
+            playerEngine.onAction("CHEESE ALL CLEARED!");
         }
     } else if (modeName === '4W') {
         const localMax4w = parseInt(localStorage.getItem('max_combo_4w') || 0);
@@ -265,9 +374,9 @@ engine.onNewBest = (modeName, scoreType, value) => {
         if (isNewBest) {
             localStorage.setItem('max_combo_4w', value);
             triggerPBFlash();
-            engine.onAction("🏆 NEW MAX COMBO!");
+            playerEngine.onAction("🏆 NEW MAX COMBO!");
         } else {
-            engine.onAction("COMBO BROKEN");
+            playerEngine.onAction("COMBO BROKEN");
         }
     }
 };
@@ -275,6 +384,7 @@ engine.onNewBest = (modeName, scoreType, value) => {
 // Initial setup
 updateSettings();
 initKeyBindLabels();
+toggleLayout(playerEngine.currentMode);
 
 // Game loop
 let lastTime = performance.now();
@@ -285,29 +395,47 @@ function renderLoop(currentTime) {
     if (dt > 100) dt = 16.66; 
 
     // Survival APM update from range slider
-    if (engine.currentMode === 'SURVIVAL') {
+    if (playerEngine.currentMode === 'SURVIVAL') {
         const apmInput = document.getElementById('apmInput');
         if (apmInput) {
-            engine.targetBotApm = parseInt(apmInput.value) || 70;
+            playerEngine.targetBotApm = parseInt(apmInput.value) || 70;
+            botEngine.targetBotApm = parseInt(apmInput.value) || 70;
         }
     }
 
-    // Fixed timestep execution
-    engine.accumulator += dt;
+    // Fixed timestep execution for Player
+    playerEngine.accumulator += dt;
     const FIXED_TICK_MS = 1; 
-    while (engine.accumulator >= FIXED_TICK_MS) {
-        engine.update(FIXED_TICK_MS);
-        engine.accumulator -= FIXED_TICK_MS;
+    while (playerEngine.accumulator >= FIXED_TICK_MS) {
+        playerEngine.update(FIXED_TICK_MS);
+        playerEngine.accumulator -= FIXED_TICK_MS;
+    }
+
+    // Fixed timestep execution for Bot (only outside VS_BOT mode in Phase 2 to keep it static)
+    if (playerEngine.currentMode !== 'VS_BOT') {
+        botEngine.accumulator += dt;
+        while (botEngine.accumulator >= FIXED_TICK_MS) {
+            botEngine.update(FIXED_TICK_MS);
+            botEngine.accumulator -= FIXED_TICK_MS;
+        }
     }
 
     // Update repeat inputs and DAS/ARR repeats
-    inputHandler.update(dt, engine);
+    inputHandler.update(dt);
 
     // Update visuals & overlay
     updateKeyOverlay(dt);
 
-    // Render Canvas
-    renderer.renderGame(engine);
+    // Render Canvases
+    if (playerEngine.currentMode === 'VS_BOT') {
+        vsPlayerRenderer.renderGame(playerEngine);
+        vsBotRenderer.renderGame(botEngine);
+    } else {
+        playerRenderer.renderGame(playerEngine);
+        if (playerEngine.currentMode === 'SURVIVAL') {
+            botRenderer.renderGame(botEngine);
+        }
+    }
 
     requestAnimationFrame(renderLoop);
 }

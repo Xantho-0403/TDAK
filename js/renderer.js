@@ -1,15 +1,15 @@
 import { SHAPES, SKINS } from './constants.js';
 
 export class Renderer {
-    constructor() {
-        this.mainCanvas = document.getElementById('tetrisCanvas');
-        this.mainCtx = this.mainCanvas.getContext('2d');
+    constructor(mainCanvasId = 'tetrisCanvas', holdCanvasId = 'holdCanvas', nextCanvasId = 'nextCanvas') {
+        this.mainCanvas = document.getElementById(mainCanvasId);
+        this.mainCtx = this.mainCanvas ? this.mainCanvas.getContext('2d') : null;
         
-        this.holdCanvas = document.getElementById('holdCanvas');
-        this.holdCtx = this.holdCanvas.getContext('2d');
+        this.holdCanvas = holdCanvasId ? document.getElementById(holdCanvasId) : null;
+        this.holdCtx = this.holdCanvas ? this.holdCanvas.getContext('2d') : null;
         
-        this.nextCanvas = document.getElementById('nextCanvas');
-        this.nextCtx = this.nextCanvas.getContext('2d');
+        this.nextCanvas = nextCanvasId ? document.getElementById(nextCanvasId) : null;
+        this.nextCtx = this.nextCanvas ? this.nextCanvas.getContext('2d') : null;
         
         this.currentSkin = localStorage.getItem('tetris_skin') || 'classic';
     }
@@ -43,6 +43,8 @@ export class Renderer {
     renderGame(engine) {
         const mainCtx = this.mainCtx;
         const mainCanvas = this.mainCanvas;
+        
+        if (!mainCtx || !mainCanvas) return;
         
         mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
 
@@ -118,14 +120,16 @@ export class Renderer {
         // Render Hold Canvas
         const holdCtx = this.holdCtx;
         const holdCanvas = this.holdCanvas;
-        holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
-        if (engine.holdPiece) {
-            const matrix = SHAPES[engine.holdPiece];
-            const pieceIndex = Object.keys(SHAPES).indexOf(engine.holdPiece) + 1;
-            for (let r = 0; r < matrix.length; r++) {
-                for (let c = 0; c < matrix[r].length; c++) {
-                    if (matrix[r][c] !== 0) {
-                        this.drawBlock(holdCtx, c + 1, r + 1, pieceIndex, 20, !engine.gameActive);
+        if (holdCtx && holdCanvas) {
+            holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+            if (engine.holdPiece) {
+                const matrix = SHAPES[engine.holdPiece];
+                const pieceIndex = Object.keys(SHAPES).indexOf(engine.holdPiece) + 1;
+                for (let r = 0; r < matrix.length; r++) {
+                    for (let c = 0; c < matrix[r].length; c++) {
+                        if (matrix[r][c] !== 0) {
+                            this.drawBlock(holdCtx, c + 1, r + 1, pieceIndex, 20, !engine.gameActive);
+                        }
                     }
                 }
             }
@@ -134,16 +138,18 @@ export class Renderer {
         // Render Next Canvas
         const nextCtx = this.nextCtx;
         const nextCanvas = this.nextCanvas;
-        nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-        for (let i = 0; i < 5; i++) {
-            const nextType = engine.nextQueue[i];
-            if (nextType) {
-                const matrix = SHAPES[nextType];
-                const pieceIndex = Object.keys(SHAPES).indexOf(nextType) + 1;
-                for (let r = 0; r < matrix.length; r++) {
-                    for (let c = 0; c < matrix[r].length; c++) {
-                        if (matrix[r][c] !== 0) {
-                            this.drawBlock(nextCtx, c + 1, r + 1 + (i * 3.5), pieceIndex, 20, !engine.gameActive);
+        if (nextCtx && nextCanvas) {
+            nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            for (let i = 0; i < 5; i++) {
+                const nextType = engine.nextQueue[i];
+                if (nextType) {
+                    const matrix = SHAPES[nextType];
+                    const pieceIndex = Object.keys(SHAPES).indexOf(nextType) + 1;
+                    for (let r = 0; r < matrix.length; r++) {
+                        for (let c = 0; c < matrix[r].length; c++) {
+                            if (matrix[r][c] !== 0) {
+                                this.drawBlock(nextCtx, c + 1, r + 1 + (i * 3.5), pieceIndex, 20, !engine.gameActive);
+                            }
                         }
                     }
                 }

@@ -1,6 +1,6 @@
 import { SHAPES, KICK_DATA_NORMAL, KICK_DATA_I } from './constants.js';
 
-export class TetrisGame {
+export class GameInstance {
     constructor() {
         this.grid = Array.from({ length: 20 }, () => Array(10).fill(0));
         this.bag = [];
@@ -13,6 +13,7 @@ export class TetrisGame {
         this.b2bCount = 0;
         this.currentSpike = 0;
         this.spikeTimer = 0;
+        this.totalAttackSent = 0;
 
         this.currentMode = 'SURVIVAL'; 
         this.gameActive = true;
@@ -57,6 +58,33 @@ export class TetrisGame {
         this.onNewBest = null;
 
         this.init();
+    }
+
+    moveLeft() {
+        return this.tryMove(-1, 0);
+    }
+
+    moveRight() {
+        return this.tryMove(1, 0);
+    }
+
+    rotateCW() {
+        this.rotate('CW');
+    }
+
+    rotateCCW() {
+        this.rotate('CCW');
+    }
+
+    rotate180() {
+        this.rotate('180');
+    }
+
+    setSoftDrop(active) {
+        this.isSoftDropping = active;
+        if (active && this.sdf >= 41) {
+            while (this.tryMove(0, 1)) {}
+        }
     }
 
     init() {
@@ -113,7 +141,8 @@ export class TetrisGame {
             elapsedTime: this.elapsedTime,
             currentPieceStr: this.currentPiece ? `${this.currentPiece.type},${this.currentPiece.x},${this.currentPiece.y},${this.currentPiece.rotationState}` : '',
             currentSpike: this.currentSpike,
-            spikeTimer: this.spikeTimer
+            spikeTimer: this.spikeTimer,
+            totalAttackSent: this.totalAttackSent
         };
     }
 
@@ -134,6 +163,7 @@ export class TetrisGame {
         this.elapsedTime = prevState.elapsedTime;
         this.currentSpike = prevState.currentSpike || 0;
         this.spikeTimer = prevState.spikeTimer || 0;
+        this.totalAttackSent = prevState.totalAttackSent || 0;
 
         if (prevState.currentPieceStr) {
             const [type, x, y, rot] = prevState.currentPieceStr.split(',');
@@ -176,6 +206,7 @@ export class TetrisGame {
         this.b2bCount = 0;
         this.currentSpike = 0;
         this.spikeTimer = 0;
+        this.totalAttackSent = 0;
         this.history = [];
         this.lineClearTimer = 0;
         this.botAttackQueue = 0;
@@ -448,6 +479,7 @@ export class TetrisGame {
         if (attackPower > 0) {
             this.currentSpike += attackPower;
             this.spikeTimer = 2000; 
+            this.totalAttackSent += attackPower;
         }
 
         if (cleared > 0) {

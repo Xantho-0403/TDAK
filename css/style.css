@@ -251,3 +251,170 @@ canvas#tetrisCanvas {
     font-weight: bold; transition: background 0.05s, color 0.05s, border-color 0.05s;
 }
 .key-box.active { background: #00f0f0; color: #111; border-color: #00f0f0; }
+
+/* BRAND NEW VS BOT MODE SYMMETRICAL LAYOUT */
+.vs-bot-layout {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+    justify-content: center;
+    width: 100%;
+}
+.vs-panel {
+    background-color: #3a3a3a;
+    padding: 16px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+}
+.vs-panel-header {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px currentColor;
+    text-transform: uppercase;
+}
+.vs-grid-container {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+.vs-left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 90px;
+}
+.vs-sub-panel {
+    background-color: #222;
+    padding: 8px;
+    border-radius: 5px;
+    text-align: center;
+    border: 1px solid #444;
+}
+.vs-sub-panel h4 {
+    margin: 0 0 5px 0;
+    font-size: 11px;
+    color: #ffcc00;
+    letter-spacing: 1px;
+}
+.vs-stats {
+    background-color: #222;
+    padding: 8px;
+    border-radius: 5px;
+    text-align: center;
+    border: 1px solid #444;
+}
+.vs-stat-label {
+    font-size: 9px;
+    color: #888;
+    margin-top: 6px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.vs-stat-label:first-child {
+    margin-top: 0;
+}
+.vs-stat-val {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    font-family: monospace;
+    margin-top: 2px;
+}
+.vs-board-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.vs-board-column canvas {
+    background-color: #111;
+    border: 2px solid #555;
+    border-radius: 4px;
+}
+.vs-damage-container {
+    width: 14px;
+    height: 600px;
+    background-color: #111;
+    border: 2px solid #444;
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+}
+.vs-damage-fill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(to top, #ff2222, #ffaa00);
+    height: 0%;
+    transition: height 0.08s ease-out;
+}
+.vs-right-column {
+    width: 90px;
+}
+.vs-center-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    width: 140px;
+    background-color: #3a3a3a;
+    padding: 16px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+}
+.vs-mode-label {
+    font-size: 12px;
+    color: #00f0f0;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: center;
+}
+.vs-timer {
+    font-size: 20px;
+    font-family: monospace;
+    font-weight: bold;
+    color: #ffcc00;
+}
+.vs-vs-badge {
+    font-size: 32px;
+    font-weight: 900;
+    font-style: italic;
+    color: #ff33aa;
+    text-shadow: 0 0 12px rgba(255, 51, 170, 0.6);
+}
+.vs-btn {
+    width: 100%;
+    padding: 8px 10px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    font-size: 11px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    transition: background 0.2s, transform 0.1s;
+}
+.vs-reset-btn {
+    background: linear-gradient(135deg, #ff5555, #cc0000);
+    color: white;
+}
+.vs-reset-btn:hover {
+    background: linear-gradient(135deg, #ff7777, #ee0000);
+    transform: scale(1.02);
+}
+.vs-menu-btn {
+    background: linear-gradient(135deg, #00f0f0, #00a0a0);
+    color: white;
+}
+.vs-menu-btn:hover {
+    background: linear-gradient(135deg, #00ffff, #00c0c0);
+    transform: scale(1.02);
+}
+

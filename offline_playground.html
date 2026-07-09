@@ -258,6 +258,173 @@ canvas#tetrisCanvas {
 }
 .key-box.active { background: #00f0f0; color: #111; border-color: #00f0f0; }
 
+/* BRAND NEW VS BOT MODE SYMMETRICAL LAYOUT */
+.vs-bot-layout {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+    justify-content: center;
+    width: 100%;
+}
+.vs-panel {
+    background-color: #3a3a3a;
+    padding: 16px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+}
+.vs-panel-header {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px currentColor;
+    text-transform: uppercase;
+}
+.vs-grid-container {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+.vs-left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 90px;
+}
+.vs-sub-panel {
+    background-color: #222;
+    padding: 8px;
+    border-radius: 5px;
+    text-align: center;
+    border: 1px solid #444;
+}
+.vs-sub-panel h4 {
+    margin: 0 0 5px 0;
+    font-size: 11px;
+    color: #ffcc00;
+    letter-spacing: 1px;
+}
+.vs-stats {
+    background-color: #222;
+    padding: 8px;
+    border-radius: 5px;
+    text-align: center;
+    border: 1px solid #444;
+}
+.vs-stat-label {
+    font-size: 9px;
+    color: #888;
+    margin-top: 6px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.vs-stat-label:first-child {
+    margin-top: 0;
+}
+.vs-stat-val {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    font-family: monospace;
+    margin-top: 2px;
+}
+.vs-board-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.vs-board-column canvas {
+    background-color: #111;
+    border: 2px solid #555;
+    border-radius: 4px;
+}
+.vs-damage-container {
+    width: 14px;
+    height: 600px;
+    background-color: #111;
+    border: 2px solid #444;
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+}
+.vs-damage-fill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(to top, #ff2222, #ffaa00);
+    height: 0%;
+    transition: height 0.08s ease-out;
+}
+.vs-right-column {
+    width: 90px;
+}
+.vs-center-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    width: 140px;
+    background-color: #3a3a3a;
+    padding: 16px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+}
+.vs-mode-label {
+    font-size: 12px;
+    color: #00f0f0;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: center;
+}
+.vs-timer {
+    font-size: 20px;
+    font-family: monospace;
+    font-weight: bold;
+    color: #ffcc00;
+}
+.vs-vs-badge {
+    font-size: 32px;
+    font-weight: 900;
+    font-style: italic;
+    color: #ff33aa;
+    text-shadow: 0 0 12px rgba(255, 51, 170, 0.6);
+}
+.vs-btn {
+    width: 100%;
+    padding: 8px 10px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    font-size: 11px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    transition: background 0.2s, transform 0.1s;
+}
+.vs-reset-btn {
+    background: linear-gradient(135deg, #ff5555, #cc0000);
+    color: white;
+}
+.vs-reset-btn:hover {
+    background: linear-gradient(135deg, #ff7777, #ee0000);
+    transform: scale(1.02);
+}
+.vs-menu-btn {
+    background: linear-gradient(135deg, #00f0f0, #00a0a0);
+    color: white;
+}
+.vs-menu-btn:hover {
+    background: linear-gradient(135deg, #00ffff, #00c0c0);
+    transform: scale(1.02);
+}
+
+
 </style>
 </head>
 <body>
@@ -332,13 +499,11 @@ canvas#tetrisCanvas {
         </div>
     </div>
 
-    <div class="main-board-wrapper">
-        <div class="gauge-container" id="survivalGaugeArea" style="display: none;">
-            <div id="attackGauge" class="gauge-fill"></div>
-        </div>
-        <div class="board-column">
+    <div class="main-board-wrapper" id="soloBoardWrapper">
+        <!-- Player Column -->
+        <div class="board-column" id="playerBoardColumn">
             <canvas id="tetrisCanvas" width="300" height="600"></canvas>
-            <div class="key-overlay">
+            <div class="key-overlay" id="soloKeyOverlay">
                 <div class="key-box" id="key-left">←</div>
                 <div class="key-box" id="key-down">↓</div>
                 <div class="key-box" id="key-right">→</div>
@@ -347,6 +512,115 @@ canvas#tetrisCanvas {
                 <div class="key-box" id="key-rotate180">180</div>
                 <div class="key-box" id="key-hardDrop">⤓</div>
                 <div class="key-box" id="key-hold">H</div>
+            </div>
+        </div>
+
+        <!-- Survival Gauge Area -->
+        <div class="gauge-container" id="survivalGaugeArea" style="display: none;">
+            <div id="attackGauge" class="gauge-fill"></div>
+        </div>
+
+        <!-- Bot Column -->
+        <div class="board-column" id="botBoardColumn" style="display: none;">
+            <div class="board-header" style="font-weight: bold; color: #ff33aa; font-size: 14px; letter-spacing: 1px; margin-bottom: 4px;">BOT</div>
+            <canvas id="botCanvas" width="300" height="600" style="background-color: #111; border: 2px solid #444;"></canvas>
+            <div style="height: 40px;"></div> <!-- aligns with player spacing -->
+        </div>
+    </div>
+
+    <!-- Brand New Symmetrical VS Bot Layout -->
+    <div id="vsBotLayout" style="display: none;" class="vs-bot-layout">
+        <!-- Player Panel Container -->
+        <div class="vs-panel player-panel" id="vsPlayerPanel">
+            <div class="vs-panel-header" style="color: #00f0f0;">PLAYER</div>
+            <div class="vs-grid-container">
+                <!-- Symmetrical Left Side of Player Panel (Hold & Local Stats) -->
+                <div class="vs-left-column">
+                    <div class="vs-sub-panel">
+                        <h4>HOLD</h4>
+                        <canvas id="vsPlayerHoldCanvas" class="sub-canvas" width="80" height="80"></canvas>
+                    </div>
+                    <div class="vs-stats">
+                        <div class="vs-stat-label">COMBO</div>
+                        <div class="vs-stat-val" id="vsPlayerCombo">0</div>
+                        <div class="vs-stat-label">B2B</div>
+                        <div class="vs-stat-val" id="vsPlayerB2B">Off</div>
+                        <div class="vs-stat-label">ATTACK</div>
+                        <div class="vs-stat-val" id="vsPlayerAttack">0</div>
+                    </div>
+                </div>
+                <!-- Symmetrical Board in Player Panel -->
+                <div class="vs-board-column">
+                    <canvas id="vsPlayerCanvas" width="300" height="600"></canvas>
+                    <div class="key-overlay">
+                        <div class="key-box" id="vs-key-left">←</div>
+                        <div class="key-box" id="vs-key-down">↓</div>
+                        <div class="key-box" id="vs-key-right">→</div>
+                        <div class="key-box" id="vs-key-ccw">↺</div>
+                        <div class="key-box" id="vs-key-cw">↻</div>
+                        <div class="key-box" id="vs-key-rotate180">180</div>
+                        <div class="key-box" id="vs-key-hardDrop">⤓</div>
+                        <div class="key-box" id="vs-key-hold">H</div>
+                    </div>
+                </div>
+                <!-- Symmetrical Damage Bar in Player Panel -->
+                <div class="vs-damage-container">
+                    <div id="vsPlayerDamageBar" class="vs-damage-fill"></div>
+                </div>
+                <!-- Symmetrical Right Side of Player Panel (Next Queue) -->
+                <div class="vs-right-column">
+                    <div class="vs-sub-panel">
+                        <h4>NEXT</h4>
+                        <canvas id="vsPlayerNextCanvas" class="sub-canvas" width="80" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Battle Info Panel -->
+        <div class="vs-center-panel">
+            <div class="vs-mode-label">VS BOT MODE</div>
+            <div class="vs-timer" id="vsTimerDisplay">00:00.00</div>
+            <div class="vs-vs-badge">VS</div>
+            <button class="vs-btn vs-reset-btn" onclick="game.reset()">RESET (R)</button>
+            <button class="vs-btn vs-menu-btn" onclick="game.openModal()">🏆 MENU</button>
+        </div>
+
+        <!-- Bot Panel Container -->
+        <div class="vs-panel bot-panel" id="vsBotPanel">
+            <div class="vs-panel-header" style="color: #ff33aa;">BOT</div>
+            <div class="vs-grid-container">
+                <!-- Symmetrical Left Side of Bot Panel (Hold & Local Stats) -->
+                <div class="vs-left-column">
+                    <div class="vs-sub-panel">
+                        <h4>HOLD</h4>
+                        <canvas id="vsBotHoldCanvas" class="sub-canvas" width="80" height="80"></canvas>
+                    </div>
+                    <div class="vs-stats">
+                        <div class="vs-stat-label">COMBO</div>
+                        <div class="vs-stat-val" id="vsBotCombo">0</div>
+                        <div class="vs-stat-label">B2B</div>
+                        <div class="vs-stat-val" id="vsBotB2B">Off</div>
+                        <div class="vs-stat-label">ATTACK</div>
+                        <div class="vs-stat-val" id="vsBotAttack">0</div>
+                    </div>
+                </div>
+                <!-- Symmetrical Board in Bot Panel -->
+                <div class="vs-board-column">
+                    <canvas id="vsBotCanvas" width="300" height="600"></canvas>
+                    <div style="height: 40px;"></div> <!-- Aligns height perfectly with Player panel key overlay -->
+                </div>
+                <!-- Symmetrical Damage Bar in Bot Panel -->
+                <div class="vs-damage-container">
+                    <div id="vsBotDamageBar" class="vs-damage-fill"></div>
+                </div>
+                <!-- Symmetrical Right Side of Bot Panel (Next Queue) -->
+                <div class="vs-right-column">
+                    <div class="vs-sub-panel">
+                        <h4>NEXT</h4>
+                        <canvas id="vsBotNextCanvas" class="sub-canvas" width="80" height="300"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -395,6 +669,10 @@ canvas#tetrisCanvas {
                 <div class="mode-card" onclick="game.selectMode('SURVIVAL')">
                     <div class="mode-title"><span>SURVIVAL (APM)</span><span style="color: #ff2222;">⚔️</span></div>
                     <div class="mode-desc">설정된 APM으로 봇의 폭발 공격이 밀려옵니다. 상쇄하세요.</div>
+                </div>
+                <div class="mode-card" onclick="game.selectMode('VS_BOT')">
+                    <div class="mode-title"><span>VS BOT PRACTICE</span><span style="color: #ff33aa;">🤖 VS</span></div>
+                    <div class="mode-desc">양측 독립 레이아웃에서 봇과 1대1 대전을 연습합니다.</div>
                 </div>
                 <div class="mode-card" onclick="game.selectMode('CHEESE')">
                     <div class="mode-title"><span>CHEESE DOWNSTACK</span><span style="color: #ffcc00;">🧀</span></div>
@@ -450,7 +728,7 @@ const KICK_DATA_I = {
 
 
 
-class TetrisGame {
+class GameInstance {
     constructor() {
         this.grid = Array.from({ length: 20 }, () => Array(10).fill(0));
         this.bag = [];
@@ -463,6 +741,7 @@ class TetrisGame {
         this.b2bCount = 0;
         this.currentSpike = 0;
         this.spikeTimer = 0;
+        this.totalAttackSent = 0;
 
         this.currentMode = 'SURVIVAL'; 
         this.gameActive = true;
@@ -507,6 +786,33 @@ class TetrisGame {
         this.onNewBest = null;
 
         this.init();
+    }
+
+    moveLeft() {
+        return this.tryMove(-1, 0);
+    }
+
+    moveRight() {
+        return this.tryMove(1, 0);
+    }
+
+    rotateCW() {
+        this.rotate('CW');
+    }
+
+    rotateCCW() {
+        this.rotate('CCW');
+    }
+
+    rotate180() {
+        this.rotate('180');
+    }
+
+    setSoftDrop(active) {
+        this.isSoftDropping = active;
+        if (active && this.sdf >= 41) {
+            while (this.tryMove(0, 1)) {}
+        }
     }
 
     init() {
@@ -563,7 +869,8 @@ class TetrisGame {
             elapsedTime: this.elapsedTime,
             currentPieceStr: this.currentPiece ? `${this.currentPiece.type},${this.currentPiece.x},${this.currentPiece.y},${this.currentPiece.rotationState}` : '',
             currentSpike: this.currentSpike,
-            spikeTimer: this.spikeTimer
+            spikeTimer: this.spikeTimer,
+            totalAttackSent: this.totalAttackSent
         };
     }
 
@@ -584,6 +891,7 @@ class TetrisGame {
         this.elapsedTime = prevState.elapsedTime;
         this.currentSpike = prevState.currentSpike || 0;
         this.spikeTimer = prevState.spikeTimer || 0;
+        this.totalAttackSent = prevState.totalAttackSent || 0;
 
         if (prevState.currentPieceStr) {
             const [type, x, y, rot] = prevState.currentPieceStr.split(',');
@@ -626,6 +934,7 @@ class TetrisGame {
         this.b2bCount = 0;
         this.currentSpike = 0;
         this.spikeTimer = 0;
+        this.totalAttackSent = 0;
         this.history = [];
         this.lineClearTimer = 0;
         this.botAttackQueue = 0;
@@ -898,6 +1207,7 @@ class TetrisGame {
         if (attackPower > 0) {
             this.currentSpike += attackPower;
             this.spikeTimer = 2000; 
+            this.totalAttackSent += attackPower;
         }
 
         if (cleared > 0) {
@@ -1101,15 +1411,15 @@ class TetrisGame {
 
 
 class Renderer {
-    constructor() {
-        this.mainCanvas = document.getElementById('tetrisCanvas');
-        this.mainCtx = this.mainCanvas.getContext('2d');
+    constructor(mainCanvasId = 'tetrisCanvas', holdCanvasId = 'holdCanvas', nextCanvasId = 'nextCanvas') {
+        this.mainCanvas = document.getElementById(mainCanvasId);
+        this.mainCtx = this.mainCanvas ? this.mainCanvas.getContext('2d') : null;
         
-        this.holdCanvas = document.getElementById('holdCanvas');
-        this.holdCtx = this.holdCanvas.getContext('2d');
+        this.holdCanvas = holdCanvasId ? document.getElementById(holdCanvasId) : null;
+        this.holdCtx = this.holdCanvas ? this.holdCanvas.getContext('2d') : null;
         
-        this.nextCanvas = document.getElementById('nextCanvas');
-        this.nextCtx = this.nextCanvas.getContext('2d');
+        this.nextCanvas = nextCanvasId ? document.getElementById(nextCanvasId) : null;
+        this.nextCtx = this.nextCanvas ? this.nextCanvas.getContext('2d') : null;
         
         this.currentSkin = localStorage.getItem('tetris_skin') || 'classic';
     }
@@ -1143,6 +1453,8 @@ class Renderer {
     renderGame(engine) {
         const mainCtx = this.mainCtx;
         const mainCanvas = this.mainCanvas;
+        
+        if (!mainCtx || !mainCanvas) return;
         
         mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
 
@@ -1218,14 +1530,16 @@ class Renderer {
         // Render Hold Canvas
         const holdCtx = this.holdCtx;
         const holdCanvas = this.holdCanvas;
-        holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
-        if (engine.holdPiece) {
-            const matrix = SHAPES[engine.holdPiece];
-            const pieceIndex = Object.keys(SHAPES).indexOf(engine.holdPiece) + 1;
-            for (let r = 0; r < matrix.length; r++) {
-                for (let c = 0; c < matrix[r].length; c++) {
-                    if (matrix[r][c] !== 0) {
-                        this.drawBlock(holdCtx, c + 1, r + 1, pieceIndex, 20, !engine.gameActive);
+        if (holdCtx && holdCanvas) {
+            holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+            if (engine.holdPiece) {
+                const matrix = SHAPES[engine.holdPiece];
+                const pieceIndex = Object.keys(SHAPES).indexOf(engine.holdPiece) + 1;
+                for (let r = 0; r < matrix.length; r++) {
+                    for (let c = 0; c < matrix[r].length; c++) {
+                        if (matrix[r][c] !== 0) {
+                            this.drawBlock(holdCtx, c + 1, r + 1, pieceIndex, 20, !engine.gameActive);
+                        }
                     }
                 }
             }
@@ -1234,16 +1548,18 @@ class Renderer {
         // Render Next Canvas
         const nextCtx = this.nextCtx;
         const nextCanvas = this.nextCanvas;
-        nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-        for (let i = 0; i < 5; i++) {
-            const nextType = engine.nextQueue[i];
-            if (nextType) {
-                const matrix = SHAPES[nextType];
-                const pieceIndex = Object.keys(SHAPES).indexOf(nextType) + 1;
-                for (let r = 0; r < matrix.length; r++) {
-                    for (let c = 0; c < matrix[r].length; c++) {
-                        if (matrix[r][c] !== 0) {
-                            this.drawBlock(nextCtx, c + 1, r + 1 + (i * 3.5), pieceIndex, 20, !engine.gameActive);
+        if (nextCtx && nextCanvas) {
+            nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            for (let i = 0; i < 5; i++) {
+                const nextType = engine.nextQueue[i];
+                if (nextType) {
+                    const matrix = SHAPES[nextType];
+                    const pieceIndex = Object.keys(SHAPES).indexOf(nextType) + 1;
+                    for (let r = 0; r < matrix.length; r++) {
+                        for (let c = 0; c < matrix[r].length; c++) {
+                            if (matrix[r][c] !== 0) {
+                                this.drawBlock(nextCtx, c + 1, r + 1 + (i * 3.5), pieceIndex, 20, !engine.gameActive);
+                            }
                         }
                     }
                 }
@@ -1286,8 +1602,27 @@ class Renderer {
 
 // --- INPUT HANDLER ---
 
-class KeyboardInput {
+class InputProvider {
     constructor() {
+        this.game = null;
+    }
+
+    attach(game) {
+        this.game = game;
+    }
+
+    detach() {
+        this.game = null;
+    }
+
+    update(dt) {
+        // Abstract method to be overridden
+    }
+}
+
+class KeyboardInputProvider extends InputProvider {
+    constructor() {
+        super();
         this.inputs = { left: false, right: false, down: false };
         this.activeDirection = 'none';
         this.dasTimer = 0;
@@ -1355,36 +1690,37 @@ class KeyboardInput {
         }
     }
 
-    handleKeyDown(code, engine) {
+    handleKeyDown(code) {
         if (this.isModalOpen) return; 
         if (this.rebindTarget) { this.executeRebind(code); return; }
-        if (engine.countdownActive) return; 
+        if (!this.game || this.game.countdownActive) return; 
 
         const action = this.keyBindings[code];
         if (!action) return;
 
         if (action === 'left') {
             this.inputs.left = true; this.activeDirection = 'left';
-            this.dasTimer = 0; this.arrTimer = 0; engine.tryMove(-1, 0);
+            this.dasTimer = 0; this.arrTimer = 0; this.game.moveLeft();
         } else if (action === 'right') {
             this.inputs.right = true; this.activeDirection = 'right';
-            this.dasTimer = 0; this.arrTimer = 0; engine.tryMove(1, 0);
+            this.dasTimer = 0; this.arrTimer = 0; this.game.moveRight();
         } else if (action === 'down') {
             this.inputs.down = true;
+            this.game.setSoftDrop(true);
         } else if (action === 'hardDrop') {
-            engine.hardDrop();
+            this.game.hardDrop();
             this.keyFlash.hardDrop = 150;
         } else if (action === 'cw') {
-            engine.rotate('CW');
+            this.game.rotateCW();
             this.keyFlash.cw = 150;
         } else if (action === 'ccw') {
-            engine.rotate('CCW');
+            this.game.rotateCCW();
             this.keyFlash.ccw = 150;
         } else if (action === 'rotate180') {
-            engine.rotate('180');
+            this.game.rotate180();
             this.keyFlash.rotate180 = 150;
         } else if (action === 'hold') {
-            engine.hold();
+            this.game.hold();
             this.keyFlash.hold = 150;
         }
     }
@@ -1394,7 +1730,10 @@ class KeyboardInput {
         
         if (code === this.getKeyByAction('left')) this.inputs.left = false;
         if (code === this.getKeyByAction('right')) this.inputs.right = false;
-        if (code === this.getKeyByAction('down')) this.inputs.down = false;
+        if (code === this.getKeyByAction('down')) {
+            this.inputs.down = false;
+            if (this.game) this.game.setSoftDrop(false);
+        }
 
         if (this.inputs.left && !this.inputs.right) {
             if (this.activeDirection !== 'left') { this.activeDirection = 'left'; this.dasTimer = 0; this.arrTimer = 0; }
@@ -1405,12 +1744,11 @@ class KeyboardInput {
         }
     }
 
-    update(dt, engine) {
-        if (!engine.gameActive || engine.countdownActive || this.isModalOpen) return;
+    update(dt) {
+        if (!this.game || !this.game.gameActive || this.game.countdownActive || this.isModalOpen) return;
 
-        engine.isSoftDropping = this.inputs.down;
-        if (this.inputs.down && this.sdf >= 41) {
-            while (engine.tryMove(0, 1)) {}
+        if (this.inputs.down && this.game.sdf >= 41) {
+            while (this.game.tryMove(0, 1)) {}
         }
 
         if (this.activeDirection !== 'none') {
@@ -1418,12 +1756,12 @@ class KeyboardInput {
             if (this.dasTimer >= this.das) {
                 if (this.arr === 0) {
                     let step = (this.activeDirection === 'left') ? -1 : 1;
-                    while (engine.tryMove(step, 0)) {}
+                    while (this.game.tryMove(step, 0)) {}
                 } else {
                     this.arrTimer += dt;
                     let step = (this.activeDirection === 'left') ? -1 : 1;
                     while (this.arrTimer >= this.arr) {
-                        engine.tryMove(step, 0);
+                        this.game.tryMove(step, 0);
                         this.arrTimer -= this.arr;
                     }
                 }
@@ -1440,9 +1778,24 @@ class KeyboardInput {
 
 
 // Global instances
-const engine = new TetrisGame();
-const renderer = new Renderer();
-const inputHandler = new KeyboardInput();
+const playerEngine = new GameInstance();
+const botEngine = new GameInstance();
+
+// Maintain 'engine' alias for 100% backward compatibility with existing UI and logic
+const engine = playerEngine;
+
+const playerRenderer = new Renderer('tetrisCanvas', 'holdCanvas', 'nextCanvas');
+const botRenderer = new Renderer('botCanvas', null, null);
+
+// Symmetrical renderers for VS Bot mode
+const vsPlayerRenderer = new Renderer('vsPlayerCanvas', 'vsPlayerHoldCanvas', 'vsPlayerNextCanvas');
+const vsBotRenderer = new Renderer('vsBotCanvas', 'vsBotHoldCanvas', 'vsBotNextCanvas');
+
+// Maintain 'renderer' alias for backward compatibility with general hooks
+const renderer = playerRenderer;
+
+const inputHandler = new KeyboardInputProvider();
+inputHandler.attach(playerEngine);
 
 // Helper: Format milliseconds into MM:SS.hh
 function formatTime(ms) {
@@ -1502,10 +1855,32 @@ function closeModal() {
     document.getElementById('modeModal').classList.remove('open');
 }
 
+function toggleLayout(modeName) {
+    const sidebarLeft = document.querySelector('.sidebar-left');
+    const soloBoardWrapper = document.getElementById('soloBoardWrapper');
+    const sidebarRight = document.querySelector('.sidebar-right');
+    const vsBotLayout = document.getElementById('vsBotLayout');
+
+    if (modeName === 'VS_BOT') {
+        if (sidebarLeft) sidebarLeft.style.display = 'none';
+        if (soloBoardWrapper) soloBoardWrapper.style.display = 'none';
+        if (sidebarRight) sidebarRight.style.display = 'none';
+        if (vsBotLayout) vsBotLayout.style.display = 'flex';
+    } else {
+        if (sidebarLeft) sidebarLeft.style.display = 'flex';
+        if (soloBoardWrapper) soloBoardWrapper.style.display = 'flex';
+        if (sidebarRight) sidebarRight.style.display = 'flex';
+        if (vsBotLayout) vsBotLayout.style.display = 'none';
+    }
+}
+
 function selectMode(modeName) {
-    engine.currentMode = modeName;
+    playerEngine.currentMode = modeName;
+    botEngine.currentMode = modeName;
+    toggleLayout(modeName);
     closeModal();
-    engine.reset();
+    playerEngine.reset();
+    botEngine.reset();
 }
 
 // Global hook for inline HTML onclick attributes
@@ -1513,6 +1888,10 @@ window.game = {
     openModal,
     closeModal,
     selectMode,
+    reset: () => {
+        playerEngine.reset();
+        botEngine.reset();
+    },
     startRebind: (action) => inputHandler.startRebind(action)
 };
 
@@ -1525,8 +1904,11 @@ function updateSettings() {
     const delayInput = document.getElementById('clearDelayInput');
     const clearDelay = delayInput ? (parseInt(delayInput.value) || 0) : 0;
     
-    engine.lineClearDelay = clearDelay;
-    engine.sdf = sdf;
+    playerEngine.lineClearDelay = clearDelay;
+    playerEngine.sdf = sdf;
+    botEngine.lineClearDelay = clearDelay;
+    botEngine.sdf = sdf;
+
     inputHandler.das = das;
     inputHandler.arr = arr;
     inputHandler.sdf = sdf;
@@ -1543,10 +1925,14 @@ if (delayInputEl) delayInputEl.addEventListener('input', updateSettings);
 // Register skin changes
 const skinSelect = document.getElementById('skinSelect');
 if (skinSelect) {
-    skinSelect.value = renderer.currentSkin;
+    skinSelect.value = playerRenderer.currentSkin;
     skinSelect.addEventListener('change', () => {
-        renderer.currentSkin = skinSelect.value;
-        localStorage.setItem('tetris_skin', renderer.currentSkin);
+        const selectedSkin = skinSelect.value;
+        playerRenderer.currentSkin = selectedSkin;
+        botRenderer.currentSkin = selectedSkin;
+        vsPlayerRenderer.currentSkin = selectedSkin;
+        vsBotRenderer.currentSkin = selectedSkin;
+        localStorage.setItem('tetris_skin', selectedSkin);
     });
 }
 
@@ -1563,14 +1949,15 @@ window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyR') {
         if (!inputHandler.rebindTarget) {
             e.preventDefault();
-            engine.reset();
+            playerEngine.reset();
+            botEngine.reset();
             return;
         }
     }
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code) || inputHandler.rebindTarget) {
         e.preventDefault();
     }
-    inputHandler.handleKeyDown(e.code, engine);
+    inputHandler.handleKeyDown(e.code);
 });
 
 window.addEventListener('keyup', (e) => {
@@ -1596,8 +1983,9 @@ function updateKeyOverlay(dt) {
 
     const setActive = (id, active) => {
         const el = document.getElementById(id);
-        if (!el) return;
-        el.classList.toggle('active', active);
+        if (el) el.classList.toggle('active', active);
+        const elVs = document.getElementById('vs-' + id);
+        if (elVs) elVs.classList.toggle('active', active);
     };
 
     setActive('key-left', inputHandler.inputs.left);
@@ -1611,79 +1999,138 @@ function updateKeyOverlay(dt) {
 }
 
 // Setup core callbacks for the engine
-engine.onAction = (text) => {
-    document.getElementById('actionDisplay').innerText = text;
+playerEngine.onAction = (text) => {
+    if (playerEngine.currentMode !== 'VS_BOT') {
+        const display = document.getElementById('actionDisplay');
+        if (display) display.innerText = text;
+    }
 };
 
-engine.onUIUpdate = () => {
-    document.getElementById('modeDisplay').innerText = engine.currentMode;
-    document.getElementById('timerDisplay').innerText = formatTime(engine.elapsedTime);
+playerEngine.onUIUpdate = () => {
+    if (playerEngine.currentMode === 'VS_BOT') {
+        const timerDisplay = document.getElementById('vsTimerDisplay');
+        if (timerDisplay) {
+            timerDisplay.innerText = formatTime(playerEngine.elapsedTime);
+        }
+        
+        const comboVal = document.getElementById('vsPlayerCombo');
+        if (comboVal) {
+            comboVal.innerText = playerEngine.combo > 0 ? playerEngine.combo - 1 : 0;
+        }
+        
+        const b2bVal = document.getElementById('vsPlayerB2B');
+        if (b2bVal) {
+            b2bVal.innerText = playerEngine.b2bCount > 0 ? `x${playerEngine.b2bCount}` : "Off";
+        }
+        
+        const attackVal = document.getElementById('vsPlayerAttack');
+        if (attackVal) {
+            attackVal.innerText = playerEngine.totalAttackSent;
+        }
 
-    const targetLabel = document.getElementById('targetLabel');
-    const comboDisplay = document.getElementById('comboDisplay');
-
-    if (engine.currentMode === '40L') {
-        targetLabel.innerText = "LINE LEFT";
-        comboDisplay.innerText = Math.max(0, 40 - engine.linesClearedTotal);
-    } else if (engine.currentMode === 'CHEESE') {
-        targetLabel.innerText = "CHEESE LEFT";
-        comboDisplay.innerText = engine.cheeseLinesRemaining;
-    } else if (engine.currentMode === 'SURVIVAL') {
-        targetLabel.innerText = "QUEUE / COMBO";
-        comboDisplay.innerText = `${engine.botAttackQueue} / ${engine.combo > 0 ? engine.combo - 1 : 0}`;
+        const damageBar = document.getElementById('vsPlayerDamageBar');
+        if (damageBar) {
+            const pct = Math.min(100, (playerEngine.botAttackQueue / 20) * 100);
+            damageBar.style.height = `${pct}%`;
+        }
     } else {
-        targetLabel.innerText = "COMBO";
-        comboDisplay.innerText = engine.combo > 0 ? engine.combo - 1 : 0;
-    }
+        document.getElementById('modeDisplay').innerText = playerEngine.currentMode;
+        document.getElementById('timerDisplay').innerText = formatTime(playerEngine.elapsedTime);
 
-    document.getElementById('b2bDisplay').innerText = engine.b2bCount > 0 ? `x${engine.b2bCount}` : "Off";
+        const targetLabel = document.getElementById('targetLabel');
+        const comboDisplay = document.getElementById('comboDisplay');
 
-    const ppsDisplay = document.getElementById('ppsDisplay');
-    if (ppsDisplay) {
-        if (engine.currentMode === '40L') {
-            const seconds = engine.elapsedTime / 1000;
-            const pps = seconds > 0 ? (engine.piecesPlaced / seconds) : 0;
-            ppsDisplay.style.display = 'block';
-            ppsDisplay.innerText = `PPS: ${pps.toFixed(2)}`;
+        if (playerEngine.currentMode === '40L') {
+            targetLabel.innerText = "LINE LEFT";
+            comboDisplay.innerText = Math.max(0, 40 - playerEngine.linesClearedTotal);
+        } else if (playerEngine.currentMode === 'CHEESE') {
+            targetLabel.innerText = "CHEESE LEFT";
+            comboDisplay.innerText = playerEngine.cheeseLinesRemaining;
+        } else if (playerEngine.currentMode === 'SURVIVAL') {
+            targetLabel.innerText = "QUEUE / COMBO";
+            comboDisplay.innerText = `${playerEngine.botAttackQueue} / ${playerEngine.combo > 0 ? playerEngine.combo - 1 : 0}`;
         } else {
-            ppsDisplay.style.display = 'none';
+            targetLabel.innerText = "COMBO";
+            comboDisplay.innerText = playerEngine.combo > 0 ? playerEngine.combo - 1 : 0;
         }
-    }
 
-    const spikeDisplay = document.getElementById('spikeDisplay');
-    if (spikeDisplay) {
-        if (engine.currentSpike >= 10) {
-            spikeDisplay.innerHTML = `<span class="spike-active">${engine.currentSpike}D SPIKE!</span>`;
-        } else if (engine.currentSpike > 0) {
-            spikeDisplay.innerHTML = `<span style="color: #ffaaaa; font-weight: bold;">${engine.currentSpike}D</span>`;
-        } else {
-            spikeDisplay.innerText = "0D";
+        document.getElementById('b2bDisplay').innerText = playerEngine.b2bCount > 0 ? `x${playerEngine.b2bCount}` : "Off";
+
+        const ppsDisplay = document.getElementById('ppsDisplay');
+        if (ppsDisplay) {
+            if (playerEngine.currentMode === '40L') {
+                const seconds = playerEngine.elapsedTime / 1000;
+                const pps = seconds > 0 ? (playerEngine.piecesPlaced / seconds) : 0;
+                ppsDisplay.style.display = 'block';
+                ppsDisplay.innerText = `PPS: ${pps.toFixed(2)}`;
+            } else {
+                ppsDisplay.style.display = 'none';
+            }
         }
-    }
 
-    // Bot attack gauge height in survival mode
-    const gaugeFill = document.getElementById('attackGauge');
-    if (gaugeFill) {
-        gaugeFill.style.height = `${(engine.botAttackQueue / 20) * 100}%`;
-    }
+        const spikeDisplay = document.getElementById('spikeDisplay');
+        if (spikeDisplay) {
+            if (playerEngine.currentSpike >= 10) {
+                spikeDisplay.innerHTML = `<span class="spike-active">${playerEngine.currentSpike}D SPIKE!</span>`;
+            } else if (playerEngine.currentSpike > 0) {
+                spikeDisplay.innerHTML = `<span style="color: #ffaaaa; font-weight: bold;">${playerEngine.currentSpike}D</span>`;
+            } else {
+                spikeDisplay.innerText = "0D";
+            }
+        }
 
-    // Toggle gauge and apm setting panels depending on mode
-    const gaugeArea = document.getElementById('survivalGaugeArea');
-    const settingArea = document.getElementById('survivalSettingArea');
-    if (gaugeArea) gaugeArea.style.display = (engine.currentMode === 'SURVIVAL') ? 'block' : 'none';
-    if (settingArea) settingArea.style.display = (engine.currentMode === 'SURVIVAL') ? 'block' : 'none';
+        // Bot attack gauge height in survival mode
+        const gaugeFill = document.getElementById('attackGauge');
+        if (gaugeFill) {
+            gaugeFill.style.height = `${(playerEngine.botAttackQueue / 20) * 100}%`;
+        }
+
+        // Toggle gauge, apm setting, and bot board column depending on mode
+        const gaugeArea = document.getElementById('survivalGaugeArea');
+        const settingArea = document.getElementById('survivalSettingArea');
+        if (gaugeArea) gaugeArea.style.display = (playerEngine.currentMode === 'SURVIVAL') ? 'block' : 'none';
+        if (settingArea) settingArea.style.display = (playerEngine.currentMode === 'SURVIVAL') ? 'block' : 'none';
+    }
 };
 
-engine.onNewBest = (modeName, scoreType, value) => {
+botEngine.onAction = (text) => {};
+
+botEngine.onUIUpdate = () => {
+    if (botEngine.currentMode === 'VS_BOT') {
+        const comboVal = document.getElementById('vsBotCombo');
+        if (comboVal) {
+            comboVal.innerText = botEngine.combo > 0 ? botEngine.combo - 1 : 0;
+        }
+        
+        const b2bVal = document.getElementById('vsBotB2B');
+        if (b2bVal) {
+            b2bVal.innerText = botEngine.b2bCount > 0 ? `x${botEngine.b2bCount}` : "Off";
+        }
+        
+        const attackVal = document.getElementById('vsBotAttack');
+        if (attackVal) {
+            attackVal.innerText = botEngine.totalAttackSent;
+        }
+
+        const damageBar = document.getElementById('vsBotDamageBar');
+        if (damageBar) {
+            const pct = Math.min(100, (botEngine.botAttackQueue / 20) * 100);
+            damageBar.style.height = `${pct}%`;
+        }
+    }
+};
+
+playerEngine.onNewBest = (modeName, scoreType, value) => {
+    if (modeName === 'VS_BOT') return;
     if (modeName === '40L') {
         const localBest = localStorage.getItem('best_record_40l');
         const isNewBest = !localBest || value < parseInt(localBest);
         if (isNewBest) {
             localStorage.setItem('best_record_40l', value);
             triggerPBFlash();
-            engine.onAction("🏆 NEW PB!");
+            playerEngine.onAction("🏆 NEW PB!");
         } else {
-            engine.onAction("FINISH!");
+            playerEngine.onAction("FINISH!");
         }
         saveSessionHistory(value);
     } else if (modeName === 'CHEESE') {
@@ -1692,9 +2139,9 @@ engine.onNewBest = (modeName, scoreType, value) => {
         if (isNewBest) {
             localStorage.setItem('best_record_cheese', value);
             triggerPBFlash();
-            engine.onAction("🏆 NEW PB!");
+            playerEngine.onAction("🏆 NEW PB!");
         } else {
-            engine.onAction("CHEESE ALL CLEARED!");
+            playerEngine.onAction("CHEESE ALL CLEARED!");
         }
     } else if (modeName === '4W') {
         const localMax4w = parseInt(localStorage.getItem('max_combo_4w') || 0);
@@ -1702,9 +2149,9 @@ engine.onNewBest = (modeName, scoreType, value) => {
         if (isNewBest) {
             localStorage.setItem('max_combo_4w', value);
             triggerPBFlash();
-            engine.onAction("🏆 NEW MAX COMBO!");
+            playerEngine.onAction("🏆 NEW MAX COMBO!");
         } else {
-            engine.onAction("COMBO BROKEN");
+            playerEngine.onAction("COMBO BROKEN");
         }
     }
 };
@@ -1712,6 +2159,7 @@ engine.onNewBest = (modeName, scoreType, value) => {
 // Initial setup
 updateSettings();
 initKeyBindLabels();
+toggleLayout(playerEngine.currentMode);
 
 // Game loop
 let lastTime = performance.now();
@@ -1722,29 +2170,47 @@ function renderLoop(currentTime) {
     if (dt > 100) dt = 16.66; 
 
     // Survival APM update from range slider
-    if (engine.currentMode === 'SURVIVAL') {
+    if (playerEngine.currentMode === 'SURVIVAL') {
         const apmInput = document.getElementById('apmInput');
         if (apmInput) {
-            engine.targetBotApm = parseInt(apmInput.value) || 70;
+            playerEngine.targetBotApm = parseInt(apmInput.value) || 70;
+            botEngine.targetBotApm = parseInt(apmInput.value) || 70;
         }
     }
 
-    // Fixed timestep execution
-    engine.accumulator += dt;
+    // Fixed timestep execution for Player
+    playerEngine.accumulator += dt;
     const FIXED_TICK_MS = 1; 
-    while (engine.accumulator >= FIXED_TICK_MS) {
-        engine.update(FIXED_TICK_MS);
-        engine.accumulator -= FIXED_TICK_MS;
+    while (playerEngine.accumulator >= FIXED_TICK_MS) {
+        playerEngine.update(FIXED_TICK_MS);
+        playerEngine.accumulator -= FIXED_TICK_MS;
+    }
+
+    // Fixed timestep execution for Bot (only outside VS_BOT mode in Phase 2 to keep it static)
+    if (playerEngine.currentMode !== 'VS_BOT') {
+        botEngine.accumulator += dt;
+        while (botEngine.accumulator >= FIXED_TICK_MS) {
+            botEngine.update(FIXED_TICK_MS);
+            botEngine.accumulator -= FIXED_TICK_MS;
+        }
     }
 
     // Update repeat inputs and DAS/ARR repeats
-    inputHandler.update(dt, engine);
+    inputHandler.update(dt);
 
     // Update visuals & overlay
     updateKeyOverlay(dt);
 
-    // Render Canvas
-    renderer.renderGame(engine);
+    // Render Canvases
+    if (playerEngine.currentMode === 'VS_BOT') {
+        vsPlayerRenderer.renderGame(playerEngine);
+        vsBotRenderer.renderGame(botEngine);
+    } else {
+        playerRenderer.renderGame(playerEngine);
+        if (playerEngine.currentMode === 'SURVIVAL') {
+            botRenderer.renderGame(botEngine);
+        }
+    }
 
     requestAnimationFrame(renderLoop);
 }

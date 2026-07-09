@@ -77,13 +77,11 @@
         </div>
     </div>
 
-    <div class="main-board-wrapper">
-        <div class="gauge-container" id="survivalGaugeArea" style="display: none;">
-            <div id="attackGauge" class="gauge-fill"></div>
-        </div>
-        <div class="board-column">
+    <div class="main-board-wrapper" id="soloBoardWrapper">
+        <!-- Player Column -->
+        <div class="board-column" id="playerBoardColumn">
             <canvas id="tetrisCanvas" width="300" height="600"></canvas>
-            <div class="key-overlay">
+            <div class="key-overlay" id="soloKeyOverlay">
                 <div class="key-box" id="key-left">←</div>
                 <div class="key-box" id="key-down">↓</div>
                 <div class="key-box" id="key-right">→</div>
@@ -92,6 +90,115 @@
                 <div class="key-box" id="key-rotate180">180</div>
                 <div class="key-box" id="key-hardDrop">⤓</div>
                 <div class="key-box" id="key-hold">H</div>
+            </div>
+        </div>
+
+        <!-- Survival Gauge Area -->
+        <div class="gauge-container" id="survivalGaugeArea" style="display: none;">
+            <div id="attackGauge" class="gauge-fill"></div>
+        </div>
+
+        <!-- Bot Column -->
+        <div class="board-column" id="botBoardColumn" style="display: none;">
+            <div class="board-header" style="font-weight: bold; color: #ff33aa; font-size: 14px; letter-spacing: 1px; margin-bottom: 4px;">BOT</div>
+            <canvas id="botCanvas" width="300" height="600" style="background-color: #111; border: 2px solid #444;"></canvas>
+            <div style="height: 40px;"></div> <!-- aligns with player spacing -->
+        </div>
+    </div>
+
+    <!-- Brand New Symmetrical VS Bot Layout -->
+    <div id="vsBotLayout" style="display: none;" class="vs-bot-layout">
+        <!-- Player Panel Container -->
+        <div class="vs-panel player-panel" id="vsPlayerPanel">
+            <div class="vs-panel-header" style="color: #00f0f0;">PLAYER</div>
+            <div class="vs-grid-container">
+                <!-- Symmetrical Left Side of Player Panel (Hold & Local Stats) -->
+                <div class="vs-left-column">
+                    <div class="vs-sub-panel">
+                        <h4>HOLD</h4>
+                        <canvas id="vsPlayerHoldCanvas" class="sub-canvas" width="80" height="80"></canvas>
+                    </div>
+                    <div class="vs-stats">
+                        <div class="vs-stat-label">COMBO</div>
+                        <div class="vs-stat-val" id="vsPlayerCombo">0</div>
+                        <div class="vs-stat-label">B2B</div>
+                        <div class="vs-stat-val" id="vsPlayerB2B">Off</div>
+                        <div class="vs-stat-label">ATTACK</div>
+                        <div class="vs-stat-val" id="vsPlayerAttack">0</div>
+                    </div>
+                </div>
+                <!-- Symmetrical Board in Player Panel -->
+                <div class="vs-board-column">
+                    <canvas id="vsPlayerCanvas" width="300" height="600"></canvas>
+                    <div class="key-overlay">
+                        <div class="key-box" id="vs-key-left">←</div>
+                        <div class="key-box" id="vs-key-down">↓</div>
+                        <div class="key-box" id="vs-key-right">→</div>
+                        <div class="key-box" id="vs-key-ccw">↺</div>
+                        <div class="key-box" id="vs-key-cw">↻</div>
+                        <div class="key-box" id="vs-key-rotate180">180</div>
+                        <div class="key-box" id="vs-key-hardDrop">⤓</div>
+                        <div class="key-box" id="vs-key-hold">H</div>
+                    </div>
+                </div>
+                <!-- Symmetrical Damage Bar in Player Panel -->
+                <div class="vs-damage-container">
+                    <div id="vsPlayerDamageBar" class="vs-damage-fill"></div>
+                </div>
+                <!-- Symmetrical Right Side of Player Panel (Next Queue) -->
+                <div class="vs-right-column">
+                    <div class="vs-sub-panel">
+                        <h4>NEXT</h4>
+                        <canvas id="vsPlayerNextCanvas" class="sub-canvas" width="80" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Battle Info Panel -->
+        <div class="vs-center-panel">
+            <div class="vs-mode-label">VS BOT MODE</div>
+            <div class="vs-timer" id="vsTimerDisplay">00:00.00</div>
+            <div class="vs-vs-badge">VS</div>
+            <button class="vs-btn vs-reset-btn" onclick="game.reset()">RESET (R)</button>
+            <button class="vs-btn vs-menu-btn" onclick="game.openModal()">🏆 MENU</button>
+        </div>
+
+        <!-- Bot Panel Container -->
+        <div class="vs-panel bot-panel" id="vsBotPanel">
+            <div class="vs-panel-header" style="color: #ff33aa;">BOT</div>
+            <div class="vs-grid-container">
+                <!-- Symmetrical Left Side of Bot Panel (Hold & Local Stats) -->
+                <div class="vs-left-column">
+                    <div class="vs-sub-panel">
+                        <h4>HOLD</h4>
+                        <canvas id="vsBotHoldCanvas" class="sub-canvas" width="80" height="80"></canvas>
+                    </div>
+                    <div class="vs-stats">
+                        <div class="vs-stat-label">COMBO</div>
+                        <div class="vs-stat-val" id="vsBotCombo">0</div>
+                        <div class="vs-stat-label">B2B</div>
+                        <div class="vs-stat-val" id="vsBotB2B">Off</div>
+                        <div class="vs-stat-label">ATTACK</div>
+                        <div class="vs-stat-val" id="vsBotAttack">0</div>
+                    </div>
+                </div>
+                <!-- Symmetrical Board in Bot Panel -->
+                <div class="vs-board-column">
+                    <canvas id="vsBotCanvas" width="300" height="600"></canvas>
+                    <div style="height: 40px;"></div> <!-- Aligns height perfectly with Player panel key overlay -->
+                </div>
+                <!-- Symmetrical Damage Bar in Bot Panel -->
+                <div class="vs-damage-container">
+                    <div id="vsBotDamageBar" class="vs-damage-fill"></div>
+                </div>
+                <!-- Symmetrical Right Side of Bot Panel (Next Queue) -->
+                <div class="vs-right-column">
+                    <div class="vs-sub-panel">
+                        <h4>NEXT</h4>
+                        <canvas id="vsBotNextCanvas" class="sub-canvas" width="80" height="300"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -140,6 +247,10 @@
                 <div class="mode-card" onclick="game.selectMode('SURVIVAL')">
                     <div class="mode-title"><span>SURVIVAL (APM)</span><span style="color: #ff2222;">⚔️</span></div>
                     <div class="mode-desc">설정된 APM으로 봇의 폭발 공격이 밀려옵니다. 상쇄하세요.</div>
+                </div>
+                <div class="mode-card" onclick="game.selectMode('VS_BOT')">
+                    <div class="mode-title"><span>VS BOT PRACTICE</span><span style="color: #ff33aa;">🤖 VS</span></div>
+                    <div class="mode-desc">양측 독립 레이아웃에서 봇과 1대1 대전을 연습합니다.</div>
                 </div>
                 <div class="mode-card" onclick="game.selectMode('CHEESE')">
                     <div class="mode-title"><span>CHEESE DOWNSTACK</span><span style="color: #ffcc00;">🧀</span></div>
