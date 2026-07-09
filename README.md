@@ -9,6 +9,7 @@ Unlike traditional clients, TDAK focuses on training rather than matchmaking.
 
 The project is designed to run entirely offline, including on school devices.
 
+To Simply play on your web, download "offlineplayground.html"
 ---
 
 ## Current Features
