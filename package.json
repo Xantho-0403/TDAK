@@ -1,0 +1,13 @@
+{
+  "name": "modern-tetris-practice-platform",
+  "version": "1.0.0",
+  "description": "Modern Tetris Practice Platform modularized with native ES modules",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "node bundle.js && mkdir -p dist && cp index.html dist/ && cp -r css dist/ && cp -r js dist/ && cp server.js dist/ && cp offline_playground.html dist/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

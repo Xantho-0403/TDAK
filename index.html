@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Modern Tetris Practice Platform - Pro Engine v3.9</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar-left">
+        <button class="mode-select-btn" onclick="game.openModal()">🏆 MODE SELECT</button>
+
+        <div class="panel">
+            <h3>HOLD</h3>
+            <canvas id="holdCanvas" class="sub-canvas" width="100" height="100"></canvas>
+        </div>
+        
+        <div class="panel">
+            <h3>ENGINE SETTINGS</h3>
+            <div class="setting-item">
+                <label for="dasInput">DAS (ms)</label>
+                <input type="number" id="dasInput" value="130" min="0" max="500">
+            </div>
+            <div class="setting-item">
+                <label for="arrInput">ARR (ms)</label>
+                <input type="number" id="arrInput" value="10" min="0" max="100">
+            </div>
+            <div class="setting-item">
+                <label for="sdfInput">SDF (1~40, 41=INF)</label>
+                <input type="number" id="sdfInput" value="41" min="1" max="41">
+            </div>
+            <div class="setting-item">
+                <label for="clearDelayInput">Line Clear Delay (ms)</label>
+                <input type="number" id="clearDelayInput" value="0" min="0" max="1000">
+            </div>
+            
+            <div class="setting-item" id="survivalSettingArea" style="display: none;">
+                <label for="apmInput">TARGET BOT APM (<span id="apmValLabel">70</span>)</label>
+                <input type="range" id="apmInput" min="20" max="150" value="70" step="5" oninput="document.getElementById('apmValLabel').innerText=this.value">
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>APPEARANCE</h3>
+            <div class="setting-item">
+                <label for="skinSelect">Block Skin</label>
+                <select id="skinSelect" style="width: 100%; background: #222; color: #fff; border: 1px solid #555; padding: 4px; border-radius: 4px;">
+                    <option value="classic">Classic</option>
+                    <option value="neon">Neon</option>
+                    <option value="pastel">Pastel</option>
+                    <option value="mono">Grayscale</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>SYSTEM HOTKEYS</h3>
+            <div class="system-guide">
+                <strong>R</strong> : 필드 즉시 리셋<br>
+                <strong>Ctrl + Z</strong> : 되돌리기 (샌드박스/40L 전용)
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>KEY CONFIG</h3>
+            <div class="key-bind-list">
+                <div class="key-bind-item"><span>Left</span><div class="key-bind-btn" id="btn-left" onclick="game.startRebind('left')">ArrowLeft</div></div>
+                <div class="key-bind-item"><span>Right</span><div class="key-bind-btn" id="btn-right" onclick="game.startRebind('right')">ArrowRight</div></div>
+                <div class="key-bind-item"><span>Soft Drop</span><div class="key-bind-btn" id="btn-down" onclick="game.startRebind('down')">ArrowDown</div></div>
+                <div class="key-bind-item"><span>Hard Drop</span><div class="key-bind-btn" id="btn-hardDrop" onclick="game.startRebind('hardDrop')">Space</div></div>
+                <div class="key-bind-item"><span>Rotate CW</span><div class="key-bind-btn" id="btn-cw" onclick="game.startRebind('cw')">KeyX</div></div>
+                <div class="key-bind-item"><span>Rotate CCW</span><div class="key-bind-btn" id="btn-ccw" onclick="game.startRebind('ccw')">KeyZ</div></div>
+                <div class="key-bind-item"><span>Rotate 180</span><div class="key-bind-btn" id="btn-rotate180" onclick="game.startRebind('rotate180')">KeyC</div></div>
+                <div class="key-bind-item"><span>Hold</span><div class="key-bind-btn" id="btn-hold" onclick="game.startRebind('hold')">ShiftLeft</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-board-wrapper">
+        <div class="gauge-container" id="survivalGaugeArea" style="display: none;">
+            <div id="attackGauge" class="gauge-fill"></div>
+        </div>
+        <div class="board-column">
+            <canvas id="tetrisCanvas" width="300" height="600"></canvas>
+            <div class="key-overlay">
+                <div class="key-box" id="key-left">←</div>
+                <div class="key-box" id="key-down">↓</div>
+                <div class="key-box" id="key-right">→</div>
+                <div class="key-box" id="key-ccw">↺</div>
+                <div class="key-box" id="key-cw">↻</div>
+                <div class="key-box" id="key-rotate180">180</div>
+                <div class="key-box" id="key-hardDrop">⤓</div>
+                <div class="key-box" id="key-hold">H</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-right">
+        <div class="panel">
+            <h3>NEXT</h3>
+            <canvas id="nextCanvas" class="sub-canvas" width="100" height="400"></canvas>
+        </div>
+
+        <div class="display-box">
+            <div id="modeDisplay" style="font-size: 12px; color: #00f0f0; font-weight: bold; margin-bottom: 5px;">SURVIVAL</div>
+            <div id="timerLabel">TIME</div>
+            <div id="timerDisplay" class="status-text" style="font-family: monospace; font-size: 16px;">00:00.00</div>
+            <div id="ppsDisplay" style="font-size: 12px; color: #00f0f0; font-weight: bold; margin: -3px 0 5px 0; display: none;"></div>
+            <div id="targetLabel">QUEUE / COMBO</div>
+            <div id="comboDisplay" class="status-text">0</div>
+            <div>B2B</div>
+            <div id="b2bDisplay" class="status-text">Off</div>
+            <div style="font-size: 11px; color: #aaa; margin-top: 5px;">SHORT ATTACK</div>
+            <div id="spikeDisplay" class="status-text" style="font-size: 16px; color: #ffaaaa;">0D</div>
+            <div id="actionDisplay" style="font-size: 13px; color: #ff5555; height: 35px; font-weight: bold; padding-top: 5px;"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modeModal">
+        <div class="modal-content">
+            <h2>SELECT GAME MODE</h2>
+            <div class="mode-option-list">
+                <div class="mode-card" onclick="game.selectMode('SANDBOX')">
+                    <div class="mode-title"><span>SANDBOX</span><span style="color: #888;">자유</span></div>
+                    <div class="mode-desc">제한 조건 없이 자유롭게 조작을 연습합니다.</div>
+                    <div class="mode-record">-</div>
+                </div>
+                <div class="mode-card" onclick="game.selectMode('40L')">
+                    <div class="mode-title"><span>40 LINES</span><span style="color: #ffcc00;">🏁</span></div>
+                    <div class="mode-desc">최대한 빠른 속도로 40줄을 클리어하세요.</div>
+                    <div class="mode-record" id="record-40l">PB: --:--.--</div>
+                    <canvas id="historyGraphCanvas" width="240" height="40"></canvas>
+                </div>
+                <div class="mode-card" onclick="game.selectMode('4W')">
+                    <div class="mode-title"><span>4-WIDE COMBO</span><span style="color: #ff33aa;">🔥</span></div>
+                    <div class="mode-desc">중앙 4칸에서 콤보를 이어가세요. 끊기면 즉시 아웃!</div>
+                    <div class="mode-record" id="record-4w">Max Combo: 0</div>
+                </div>
+                <div class="mode-card" onclick="game.selectMode('SURVIVAL')">
+                    <div class="mode-title"><span>SURVIVAL (APM)</span><span style="color: #ff2222;">⚔️</span></div>
+                    <div class="mode-desc">설정된 APM으로 봇의 폭발 공격이 밀려옵니다. 상쇄하세요.</div>
+                </div>
+                <div class="mode-card" onclick="game.selectMode('CHEESE')">
+                    <div class="mode-title"><span>CHEESE DOWNSTACK</span><span style="color: #ffcc00;">🧀</span></div>
+                    <div class="mode-desc">100줄의 완전 무작위 지그재그 치즈를 파내세요.</div>
+                    <div class="mode-record" id="record-cheese">PB: --:--.--</div>
+                </div>
+            </div>
+            <button class="close-modal-btn" onclick="game.closeModal()">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
