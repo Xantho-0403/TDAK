@@ -1,20 +1,4 @@
-const safeStorage = {
-    getItem(key) {
-        try {
-            return localStorage.getItem(key);
-        } catch (e) {
-            return this.memory[key] || null;
-        }
-    },
-    setItem(key, value) {
-        try {
-            localStorage.setItem(key, value);
-        } catch (e) {
-            this.memory[key] = String(value);
-        }
-    },
-    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
-};
+import { safeStorage } from './constants.js';
 
 export class BattleManager {
     constructor(player, bot) {

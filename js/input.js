@@ -1,22 +1,4 @@
-import { SHAPES, KICK_DATA_NORMAL, KICK_DATA_I } from './constants.js';
-
-const safeStorage = {
-    getItem(key) {
-        try {
-            return localStorage.getItem(key);
-        } catch (e) {
-            return this.memory[key] || null;
-        }
-    },
-    setItem(key, value) {
-        try {
-            localStorage.setItem(key, value);
-        } catch (e) {
-            this.memory[key] = String(value);
-        }
-    },
-    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
-};
+import { SHAPES, KICK_DATA_NORMAL, KICK_DATA_I, safeStorage } from './constants.js';
 
 export class InputProvider {
     constructor() {

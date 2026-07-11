@@ -15,6 +15,24 @@ export const SKINS = {
     mono:    { 0: '#111111', 1: '#eaeaea', 2: '#c9c9c9', 3: '#a8a8a8', 4: '#8a8a8a', 5: '#6e6e6e', 6: '#525252', 7: '#d6d6d6', 8: '#2a2a2a' }
 };
 
+export const safeStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return this.memory[key] || null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            this.memory[key] = String(value);
+        }
+    },
+    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
+};
+
 export const KICK_DATA_NORMAL = {
     '0->1': [[0,0], [-1,0], [-1, 1], [0,-2], [-1,-2]], '1->0': [[0,0], [ 1,0], [ 1,-1], [0, 2], [ 1, 2]],
     '1->2': [[0,0], [ 1,0], [ 1,-1], [0, 2], [ 1, 2]], '2->1': [[0,0], [-1,0], [-1, 1], [0,-2], [-1,-2]],
