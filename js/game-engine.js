@@ -407,6 +407,49 @@ export class GameInstance {
         this.lockPiece();
     }
 
+    calculateAttackValue(cleared, isAllClear, isSpin = false, isMini = false, pieceType = 'T', customCombo = null, customB2BCount = null) {
+        const isTSpin = isSpin && pieceType === 'T';
+        let attackPower = 0;
+        if (isTSpin) {
+            if (isMini) {
+                if (cleared === 1) attackPower = 1;
+                else if (cleared === 2) attackPower = 2;
+            } else {
+                if (cleared === 1) attackPower = 2;
+                else if (cleared === 2) attackPower = 4;
+                else if (cleared === 3) attackPower = 6;
+            }
+        } else {
+            if (cleared === 2) attackPower = 1;
+            else if (cleared === 3) attackPower = 2;
+            else if (cleared === 4) attackPower = 4;
+        }
+
+        const currentB2BCount = (customB2BCount !== null) ? customB2BCount : this.b2bCount;
+        const currentCombo = (customCombo !== null) ? customCombo : this.combo;
+
+        if (cleared > 0) {
+            const isDifficultClear = (cleared === 4) || isTSpin;
+            if (isDifficultClear) {
+                if (currentB2BCount >= 1) {
+                    attackPower += 1;
+                }
+            }
+        }
+
+        if (cleared > 0 && currentCombo > 0) { 
+            if (currentCombo <= 2) attackPower += 1;
+            else if (currentCombo <= 4) attackPower += 2;
+            else attackPower += 3;
+        }
+
+        if (isAllClear) {
+            attackPower += 10;
+        }
+
+        return attackPower;
+    }
+
     lockPiece() {
         let pieceType = this.currentPiece.type;
         this.piecesPlaced++;
@@ -447,40 +490,35 @@ export class GameInstance {
 
         const cleared = targetLines.length;
 
+        // Perfect Clear (All Clear) check: entire board is empty after clearing lines
+        let isAllClear = false;
+        if (cleared > 0) {
+            isAllClear = true;
+            for (let r = 0; r < 20; r++) {
+                if (!targetLines.includes(r)) {
+                    if (!this.grid[r].every(val => val === 0)) {
+                        isAllClear = false;
+                        break;
+                    }
+                }
+            }
+        }
+
         const isTSpin = isSpin && pieceType === 'T';
         let spinLabel = '';
-
-        let attackPower = 0;
         if (isTSpin) {
             spinLabel = isMini ? 'T-SPIN MINI ' : 'T-SPIN ';
-            if (isMini) {
-                if (cleared === 1) attackPower = 1;
-                else if (cleared === 2) attackPower = 2;
-            } else {
-                if (cleared === 1) attackPower = 2;
-                else if (cleared === 2) attackPower = 4;
-                else if (cleared === 3) attackPower = 6;
-            }
-        } else {
-            if (cleared === 2) attackPower = 1;
-            else if (cleared === 3) attackPower = 2;
-            else if (cleared === 4) attackPower = 4;
         }
+
+        let attackPower = this.calculateAttackValue(cleared, isAllClear, isSpin, isMini, pieceType);
 
         if (cleared > 0) {
             const isDifficultClear = (cleared === 4) || isTSpin;
             if (isDifficultClear) {
                 this.b2bCount++;
-                if (this.b2bCount > 1) attackPower += 1;
             } else {
                 this.b2bCount = 0;
             }
-        }
-
-        if (cleared > 0 && this.combo > 0) { 
-            if (this.combo <= 2) attackPower += 1;
-            else if (this.combo <= 4) attackPower += 2;
-            else attackPower += 3;
         }
 
         if (attackPower > 0) {
@@ -510,7 +548,11 @@ export class GameInstance {
                 }
             }
 
-            if (this.onAction) this.onAction(`${spinLabel}${this.combo - 1} COMBO!`);
+            let actionText = `${spinLabel}${this.combo - 1} COMBO!`;
+            if (isAllClear) {
+                actionText = `PERFECT CLEAR! ` + actionText;
+            }
+            if (this.onAction) this.onAction(actionText);
         } else {
             if (this.currentMode === 'VS_BOT') {
                 this.combo = 0;

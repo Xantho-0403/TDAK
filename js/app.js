@@ -301,7 +301,7 @@ const vsLabelEl = document.getElementById('vsBotPpsLabel');
 
 function syncBotPps(val) {
     let num = parseFloat(val) || 3.0;
-    num = Math.max(0.5, Math.min(15.0, num));
+    num = Math.max(0.5, Math.min(5.0, num));
     
     if (botScheduler && botScheduler.pps !== num) {
         if (typeof battleManager !== 'undefined' && battleManager) {
@@ -344,13 +344,13 @@ const vsPpsTextEl = document.getElementById('vsBotPpsInputText');
 if (vsPpsTextEl) {
     vsPpsTextEl.addEventListener('input', (e) => {
         let val = parseFloat(e.target.value);
-        if (!isNaN(val) && val >= 0.5 && val <= 15.0) {
+        if (!isNaN(val) && val >= 0.5 && val <= 5.0) {
             syncBotPps(val);
         }
     });
     vsPpsTextEl.addEventListener('blur', (e) => {
         let val = parseFloat(e.target.value) || 3.0;
-        val = Math.max(0.5, Math.min(15.0, val));
+        val = Math.max(0.5, Math.min(5.0, val));
         syncBotPps(val);
     });
 }
@@ -371,7 +371,13 @@ if (skinSelect) {
 
 // Window Keyboard handlers
 window.addEventListener('keydown', (e) => {
-    if (inputHandler.isModalOpen) return; 
+    if (inputHandler.isModalOpen) {
+        if (inputHandler.rebindTarget) {
+            e.preventDefault();
+            inputHandler.handleKeyDown(e.code);
+        }
+        return; 
+    }
     
     if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
         e.preventDefault();
