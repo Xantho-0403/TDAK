@@ -418,3 +418,30 @@ canvas#tetrisCanvas {
     transform: scale(1.02);
 }
 
+.config-select-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #ff33aa, #aa0077);
+    border: none;
+    color: #fff;
+    padding: 10px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    transition: background 0.2s;
+    margin-top: 5px;
+}
+.config-select-btn:hover {
+    background: linear-gradient(135deg, #ff55cc, #cc0099);
+}
+
+.vs-config-btn {
+    background: linear-gradient(135deg, #ff33aa, #aa0077);
+    color: white;
+}
+.vs-config-btn:hover {
+    background: linear-gradient(135deg, #ff55cc, #cc0099);
+    transform: scale(1.02);
+}
+

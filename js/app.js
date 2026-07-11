@@ -3,6 +3,24 @@ import { Renderer } from './renderer.js';
 import { KeyboardInputProvider, BotInputProvider, PPSScheduler, DebugAI } from './input.js';
 import { BattleManager } from './battle-manager.js';
 
+const safeStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return this.memory[key] || null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            this.memory[key] = String(value);
+        }
+    },
+    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
+};
+
 // Global instances
 const playerEngine = new GameInstance();
 const botEngine = new GameInstance();
@@ -83,13 +101,13 @@ function formatTime(ms) {
 function saveSessionHistory(timeMs) {
     let history = [];
     try {
-        history = JSON.parse(localStorage.getItem('tetris_40l_history')) || [];
+        history = JSON.parse(safeStorage.getItem('tetris_40l_history')) || [];
     } catch (e) {
         history = [];
     }
     history.push(timeMs);
     if (history.length > 15) history = history.slice(history.length - 15);
-    localStorage.setItem('tetris_40l_history', JSON.stringify(history));
+    safeStorage.setItem('tetris_40l_history', JSON.stringify(history));
 }
 
 // Visual effect on canvas for Personal Best records
@@ -107,16 +125,16 @@ function openModal() {
     inputHandler.isModalOpen = true;
     document.getElementById('modeModal').classList.add('open');
     
-    const best40l = localStorage.getItem('best_record_40l');
+    const best40l = safeStorage.getItem('best_record_40l');
     document.getElementById('record-40l').innerText = best40l ? `PB: ${formatTime(parseInt(best40l))}` : `PB: --:--.--`;
-    document.getElementById('record-4w').innerText = `Max Combo: ${localStorage.getItem('max_combo_4w') || 0}`;
+    document.getElementById('record-4w').innerText = `Max Combo: ${safeStorage.getItem('max_combo_4w') || 0}`;
     
-    const bestCheese = localStorage.getItem('best_record_cheese');
+    const bestCheese = safeStorage.getItem('best_record_cheese');
     document.getElementById('record-cheese').innerText = bestCheese ? `PB: ${formatTime(parseInt(bestCheese))}` : `PB: --:--.--`;
 
     let history = [];
     try {
-        history = JSON.parse(localStorage.getItem('tetris_40l_history')) || [];
+        history = JSON.parse(safeStorage.getItem('tetris_40l_history')) || [];
     } catch (e) {
         history = [];
     }
@@ -148,6 +166,9 @@ function toggleLayout(modeName) {
 }
 
 function selectMode(modeName) {
+    if (playerEngine.currentMode === 'VS_BOT' && modeName !== 'VS_BOT') {
+        battleManager.resetScore();
+    }
     playerEngine.currentMode = modeName;
     botEngine.currentMode = modeName;
     toggleLayout(modeName);
@@ -164,11 +185,25 @@ function selectMode(modeName) {
     }
 }
 
+function openConfigModal() {
+    inputHandler.isModalOpen = true;
+    document.getElementById('configModal').classList.add('open');
+    initKeyBindLabels();
+}
+
+function closeConfigModal() {
+    updateSettings();
+    inputHandler.isModalOpen = false;
+    document.getElementById('configModal').classList.remove('open');
+}
+
 // Global hook for inline HTML onclick attributes
 window.game = {
     openModal,
     closeModal,
     selectMode,
+    openConfigModal,
+    closeConfigModal,
     reset: () => {
         playerEngine.reset();
         botEngine.reset();
@@ -186,9 +221,13 @@ window.game = {
 
 // UI settings synchronizer
 function updateSettings() {
-    const das = parseInt(document.getElementById('dasInput').value) || 0;
-    const arr = parseInt(document.getElementById('arrInput').value) || 0;
-    const sdf = parseInt(document.getElementById('sdfInput').value) || 1;
+    const dasVal = document.getElementById('dasInput').value;
+    const arrVal = document.getElementById('arrInput').value;
+    const sdfVal = document.getElementById('sdfInput').value;
+
+    const das = parseInt(dasVal) || 0;
+    const arr = parseInt(arrVal) || 0;
+    const sdf = parseInt(sdfVal) || 1;
     
     const delayInput = document.getElementById('clearDelayInput');
     const clearDelay = delayInput ? (parseInt(delayInput.value) || 0) : 0;
@@ -201,6 +240,62 @@ function updateSettings() {
     inputHandler.das = das;
     inputHandler.arr = arr;
     inputHandler.sdf = sdf;
+
+    // Persist to safeStorage
+    safeStorage.setItem('tetris_das', das.toString());
+    safeStorage.setItem('tetris_arr', arr.toString());
+    safeStorage.setItem('tetris_sdf', sdf.toString());
+    if (delayInput) safeStorage.setItem('tetris_clear_delay', clearDelay.toString());
+
+    const resetLockCheckbox = document.getElementById('resetLockCheckbox');
+    if (resetLockCheckbox) {
+        safeStorage.setItem('tetris_reset_lock', resetLockCheckbox.checked.toString());
+    }
+
+    const aiDebugCheckbox = document.getElementById('aiDebugOverlayCheckbox');
+    if (aiDebugCheckbox) {
+        safeStorage.setItem('tetris_ai_debug', aiDebugCheckbox.checked.toString());
+    }
+}
+
+// Load persisted settings
+function loadSettings() {
+    const storedDas = safeStorage.getItem('tetris_das');
+    if (storedDas !== null) {
+        document.getElementById('dasInput').value = storedDas;
+    }
+    const storedArr = safeStorage.getItem('tetris_arr');
+    if (storedArr !== null) {
+        document.getElementById('arrInput').value = storedArr;
+    }
+    const storedSdf = safeStorage.getItem('tetris_sdf');
+    if (storedSdf !== null) {
+        document.getElementById('sdfInput').value = storedSdf;
+    }
+    const storedDelay = safeStorage.getItem('tetris_clear_delay');
+    if (storedDelay !== null) {
+        const delayInput = document.getElementById('clearDelayInput');
+        if (delayInput) delayInput.value = storedDelay;
+    }
+    const storedResetLock = safeStorage.getItem('tetris_reset_lock');
+    if (storedResetLock !== null) {
+        const resetLockCheckbox = document.getElementById('resetLockCheckbox');
+        if (resetLockCheckbox) resetLockCheckbox.checked = (storedResetLock === 'true');
+    }
+    const storedAiDebug = safeStorage.getItem('tetris_ai_debug');
+    if (storedAiDebug !== null) {
+        const aiDebugCheckbox = document.getElementById('aiDebugOverlayCheckbox');
+        if (aiDebugCheckbox) aiDebugCheckbox.checked = (storedAiDebug === 'true');
+    }
+    const storedSkin = safeStorage.getItem('tetris_skin');
+    if (storedSkin !== null) {
+        playerRenderer.currentSkin = storedSkin;
+        botRenderer.currentSkin = storedSkin;
+        vsPlayerRenderer.currentSkin = storedSkin;
+        vsBotRenderer.currentSkin = storedSkin;
+    }
+
+    updateSettings();
 }
 
 // Register DOM inputs listeners
@@ -211,6 +306,12 @@ document.getElementById('sdfInput').addEventListener('input', updateSettings);
 const delayInputEl = document.getElementById('clearDelayInput');
 if (delayInputEl) delayInputEl.addEventListener('input', updateSettings);
 
+const resetLockCheckboxEl = document.getElementById('resetLockCheckbox');
+if (resetLockCheckboxEl) resetLockCheckboxEl.addEventListener('change', updateSettings);
+
+const aiDebugOverlayCheckboxEl = document.getElementById('aiDebugOverlayCheckbox');
+if (aiDebugOverlayCheckboxEl) aiDebugOverlayCheckboxEl.addEventListener('change', updateSettings);
+
 const sidebarPpsEl = document.getElementById('botPpsInput');
 const vsPpsEl = document.getElementById('vsBotPpsInput');
 const vsLabelEl = document.getElementById('vsBotPpsLabel');
@@ -218,6 +319,12 @@ const vsLabelEl = document.getElementById('vsBotPpsLabel');
 function syncBotPps(val) {
     let num = parseFloat(val) || 3.0;
     num = Math.max(0.5, Math.min(15.0, num));
+    
+    if (botScheduler && botScheduler.pps !== num) {
+        if (typeof battleManager !== 'undefined' && battleManager) {
+            battleManager.resetScore();
+        }
+    }
     
     if (sidebarPpsEl && parseFloat(sidebarPpsEl.value) !== num) {
         sidebarPpsEl.value = num.toFixed(1);
@@ -227,6 +334,11 @@ function syncBotPps(val) {
     }
     if (vsLabelEl) {
         vsLabelEl.innerText = num.toFixed(1);
+    }
+    
+    const vsPpsTextEl = document.getElementById('vsBotPpsInputText');
+    if (vsPpsTextEl && parseFloat(vsPpsTextEl.value) !== num) {
+        vsPpsTextEl.value = num.toFixed(1);
     }
     
     if (botScheduler) {
@@ -245,6 +357,21 @@ if (vsPpsEl) {
     });
 }
 
+const vsPpsTextEl = document.getElementById('vsBotPpsInputText');
+if (vsPpsTextEl) {
+    vsPpsTextEl.addEventListener('input', (e) => {
+        let val = parseFloat(e.target.value);
+        if (!isNaN(val) && val >= 0.5 && val <= 15.0) {
+            syncBotPps(val);
+        }
+    });
+    vsPpsTextEl.addEventListener('blur', (e) => {
+        let val = parseFloat(e.target.value) || 3.0;
+        val = Math.max(0.5, Math.min(15.0, val));
+        syncBotPps(val);
+    });
+}
+
 // Register skin changes
 const skinSelect = document.getElementById('skinSelect');
 if (skinSelect) {
@@ -255,23 +382,35 @@ if (skinSelect) {
         botRenderer.currentSkin = selectedSkin;
         vsPlayerRenderer.currentSkin = selectedSkin;
         vsBotRenderer.currentSkin = selectedSkin;
-        localStorage.setItem('tetris_skin', selectedSkin);
+        safeStorage.setItem('tetris_skin', selectedSkin);
     });
 }
 
 // Window Keyboard handlers
 window.addEventListener('keydown', (e) => {
     if (inputHandler.isModalOpen) return; 
+    
     if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
         e.preventDefault();
         if (!inputHandler.rebindTarget) {
-            engine.undo();
+            if (playerEngine.currentMode === 'SANDBOX') {
+                engine.undo();
+            }
             return;
         }
     }
-    if (e.code === 'KeyR') {
+    
+    const resetKey = inputHandler.getKeyByAction('reset') || 'KeyR';
+    if (e.code === resetKey) {
         if (!inputHandler.rebindTarget) {
             e.preventDefault();
+            
+            // Lock reset hotkey in Match
+            const resetLockCheckbox = document.getElementById('resetLockCheckbox');
+            if (resetLockCheckbox && resetLockCheckbox.checked && playerEngine.currentMode === 'VS_BOT' && playerEngine.gameActive && !playerEngine.countdownActive && !playerEngine.matchResult) {
+                return;
+            }
+            
             playerEngine.reset();
             botEngine.reset();
             botScheduler.clearQueue();
@@ -285,6 +424,7 @@ window.addEventListener('keydown', (e) => {
             return;
         }
     }
+    
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code) || inputHandler.rebindTarget) {
         e.preventDefault();
     }
@@ -302,6 +442,10 @@ function initKeyBindLabels() {
         const btn = document.getElementById(`btn-${action}`);
         if (btn) {
             btn.innerText = key;
+        }
+        const modalBtn = document.getElementById(`modal-btn-${action}`);
+        if (modalBtn) {
+            modalBtn.innerText = key;
         }
     }
 }
@@ -454,10 +598,10 @@ botEngine.onUIUpdate = () => {
 playerEngine.onNewBest = (modeName, scoreType, value) => {
     if (modeName === 'VS_BOT') return;
     if (modeName === '40L') {
-        const localBest = localStorage.getItem('best_record_40l');
+        const localBest = safeStorage.getItem('best_record_40l');
         const isNewBest = !localBest || value < parseInt(localBest);
         if (isNewBest) {
-            localStorage.setItem('best_record_40l', value);
+            safeStorage.setItem('best_record_40l', value);
             triggerPBFlash();
             playerEngine.onAction("🏆 NEW PB!");
         } else {
@@ -465,20 +609,20 @@ playerEngine.onNewBest = (modeName, scoreType, value) => {
         }
         saveSessionHistory(value);
     } else if (modeName === 'CHEESE') {
-        const localCheese = localStorage.getItem('best_record_cheese');
+        const localCheese = safeStorage.getItem('best_record_cheese');
         const isNewBest = !localCheese || value < parseInt(localCheese);
         if (isNewBest) {
-            localStorage.setItem('best_record_cheese', value);
+            safeStorage.setItem('best_record_cheese', value);
             triggerPBFlash();
             playerEngine.onAction("🏆 NEW PB!");
         } else {
             playerEngine.onAction("CHEESE ALL CLEARED!");
         }
     } else if (modeName === '4W') {
-        const localMax4w = parseInt(localStorage.getItem('max_combo_4w') || 0);
+        const localMax4w = parseInt(safeStorage.getItem('max_combo_4w') || 0);
         const isNewBest = value > localMax4w;
         if (isNewBest) {
-            localStorage.setItem('max_combo_4w', value);
+            safeStorage.setItem('max_combo_4w', value);
             triggerPBFlash();
             playerEngine.onAction("🏆 NEW MAX COMBO!");
         } else {
@@ -488,7 +632,7 @@ playerEngine.onNewBest = (modeName, scoreType, value) => {
 };
 
 // Initial setup
-updateSettings();
+loadSettings();
 initKeyBindLabels();
 toggleLayout(playerEngine.currentMode);
 

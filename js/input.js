@@ -1,5 +1,23 @@
 import { SHAPES, KICK_DATA_NORMAL, KICK_DATA_I } from './constants.js';
 
+const safeStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return this.memory[key] || null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            this.memory[key] = String(value);
+        }
+    },
+    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
+};
+
 export class InputProvider {
     constructor() {
         this.game = null;
@@ -30,7 +48,7 @@ export class KeyboardInputProvider extends InputProvider {
         this.keyBindings = {
             'ArrowLeft': 'left', 'ArrowRight': 'right', 'ArrowDown': 'down',
             'Space': 'hardDrop', 'KeyX': 'cw', 'KeyZ': 'ccw', 'KeyC': 'rotate180',
-            'ShiftLeft': 'hold'
+            'ShiftLeft': 'hold', 'KeyR': 'reset'
         };
         
         this.loadKeyBindings();
@@ -50,10 +68,17 @@ export class KeyboardInputProvider extends InputProvider {
     startRebind(actionName) {
         this.rebindTarget = actionName;
         document.querySelectorAll('.key-bind-btn').forEach(btn => btn.classList.remove('active'));
+        
         const targetBtn = document.getElementById(`btn-${actionName}`);
         if (targetBtn) {
             targetBtn.classList.add('active');
             targetBtn.innerText = "Press key...";
+        }
+
+        const modalTargetBtn = document.getElementById(`modal-btn-${actionName}`);
+        if (modalTargetBtn) {
+            modalTargetBtn.classList.add('active');
+            modalTargetBtn.innerText = "Press key...";
         }
     }
 
@@ -70,18 +95,29 @@ export class KeyboardInputProvider extends InputProvider {
             targetBtn.innerText = code;
             targetBtn.classList.remove('active');
         }
+
+        const modalTargetBtn = document.getElementById(`modal-btn-${this.rebindTarget}`);
+        if (modalTargetBtn) {
+            modalTargetBtn.innerText = code;
+            modalTargetBtn.classList.remove('active');
+        }
+
         this.rebindTarget = null;
     }
 
     saveKeyBindings() {
-        localStorage.setItem('tetris_key_bindings', JSON.stringify(this.keyBindings));
+        safeStorage.setItem('tetris_key_bindings', JSON.stringify(this.keyBindings));
     }
 
     loadKeyBindings() {
         try {
-            const stored = localStorage.getItem('tetris_key_bindings');
+            const stored = safeStorage.getItem('tetris_key_bindings');
             if (stored) {
                 this.keyBindings = JSON.parse(stored);
+                // Ensure reset key is present
+                if (!Object.values(this.keyBindings).includes('reset')) {
+                    this.keyBindings['KeyR'] = 'reset';
+                }
             }
         } catch (e) {
             console.error('Failed to load key bindings', e);
@@ -89,8 +125,8 @@ export class KeyboardInputProvider extends InputProvider {
     }
 
     handleKeyDown(code) {
-        if (this.isModalOpen) return; 
         if (this.rebindTarget) { this.executeRebind(code); return; }
+        if (this.isModalOpen) return; 
         if (!this.game || this.game.countdownActive) return; 
 
         const action = this.keyBindings[code];

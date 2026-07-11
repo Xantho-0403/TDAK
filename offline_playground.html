@@ -424,6 +424,33 @@ canvas#tetrisCanvas {
     transform: scale(1.02);
 }
 
+.config-select-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #ff33aa, #aa0077);
+    border: none;
+    color: #fff;
+    padding: 10px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    transition: background 0.2s;
+    margin-top: 5px;
+}
+.config-select-btn:hover {
+    background: linear-gradient(135deg, #ff55cc, #cc0099);
+}
+
+.vs-config-btn {
+    background: linear-gradient(135deg, #ff33aa, #aa0077);
+    color: white;
+}
+.vs-config-btn:hover {
+    background: linear-gradient(135deg, #ff55cc, #cc0099);
+    transform: scale(1.02);
+}
+
 
 </style>
 </head>
@@ -432,77 +459,25 @@ canvas#tetrisCanvas {
 <div class="container">
     <div class="sidebar-left">
         <button class="mode-select-btn" onclick="game.openModal()">🏆 MODE SELECT</button>
+        <button class="config-select-btn" onclick="game.openConfigModal()">⚙️ CONFIG / SETTINGS</button>
 
         <div class="panel">
             <h3>HOLD</h3>
             <canvas id="holdCanvas" class="sub-canvas" width="100" height="100"></canvas>
         </div>
-        
-        <div class="panel">
-            <h3>ENGINE SETTINGS</h3>
+          <div class="panel" id="survivalSettingArea" style="display: none; border-color: #ff33aa;">
+            <h3 style="color: #ff33aa;">SURVIVAL TARGET</h3>
             <div class="setting-item">
-                <label for="dasInput">DAS (ms)</label>
-                <input type="number" id="dasInput" value="130" min="0" max="500">
-            </div>
-            <div class="setting-item">
-                <label for="arrInput">ARR (ms)</label>
-                <input type="number" id="arrInput" value="10" min="0" max="100">
-            </div>
-            <div class="setting-item">
-                <label for="sdfInput">SDF (1~40, 41=INF)</label>
-                <input type="number" id="sdfInput" value="41" min="1" max="41">
-            </div>
-            <div class="setting-item">
-                <label for="clearDelayInput">Line Clear Delay (ms)</label>
-                <input type="number" id="clearDelayInput" value="0" min="0" max="1000">
-            </div>
-            <div class="setting-item">
-                <label for="botPpsInput">BOT Speed (0.5~15 PPS)</label>
-                <input type="number" id="botPpsInput" value="3.0" min="0.5" max="15.0" step="0.5">
-            </div>
-            <div class="setting-item" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
-                <input type="checkbox" id="aiDebugOverlayCheckbox" style="width: auto; cursor: pointer; accent-color: #ff33aa;">
-                <label for="aiDebugOverlayCheckbox" style="margin-bottom: 0; cursor: pointer; user-select: none;">Show AI Debug Overlay</label>
-            </div>
-            
-            <div class="setting-item" id="survivalSettingArea" style="display: none;">
-                <label for="apmInput">TARGET BOT APM (<span id="apmValLabel">70</span>)</label>
-                <input type="range" id="apmInput" min="20" max="150" value="70" step="5" oninput="document.getElementById('apmValLabel').innerText=this.value">
-            </div>
-        </div>
-
-        <div class="panel">
-            <h3>APPEARANCE</h3>
-            <div class="setting-item">
-                <label for="skinSelect">Block Skin</label>
-                <select id="skinSelect" style="width: 100%; background: #222; color: #fff; border: 1px solid #555; padding: 4px; border-radius: 4px;">
-                    <option value="classic">Classic</option>
-                    <option value="neon">Neon</option>
-                    <option value="pastel">Pastel</option>
-                    <option value="mono">Grayscale</option>
-                </select>
+                <label for="apmInput" style="font-size: 11px; color: #ccc;">TARGET BOT APM (<span id="apmValLabel">70</span>)</label>
+                <input type="range" id="apmInput" min="20" max="150" value="70" step="5" oninput="document.getElementById('apmValLabel').innerText=this.value" style="width: 100%; background: #222; accent-color: #ff33aa; cursor: pointer;">
             </div>
         </div>
 
         <div class="panel">
             <h3>SYSTEM HOTKEYS</h3>
             <div class="system-guide">
-                <strong>R</strong> : 필드 즉시 리셋<br>
-                <strong>Ctrl + Z</strong> : 되돌리기 (샌드박스/40L 전용)
-            </div>
-        </div>
-
-        <div class="panel">
-            <h3>KEY CONFIG</h3>
-            <div class="key-bind-list">
-                <div class="key-bind-item"><span>Left</span><div class="key-bind-btn" id="btn-left" onclick="game.startRebind('left')">ArrowLeft</div></div>
-                <div class="key-bind-item"><span>Right</span><div class="key-bind-btn" id="btn-right" onclick="game.startRebind('right')">ArrowRight</div></div>
-                <div class="key-bind-item"><span>Soft Drop</span><div class="key-bind-btn" id="btn-down" onclick="game.startRebind('down')">ArrowDown</div></div>
-                <div class="key-bind-item"><span>Hard Drop</span><div class="key-bind-btn" id="btn-hardDrop" onclick="game.startRebind('hardDrop')">Space</div></div>
-                <div class="key-bind-item"><span>Rotate CW</span><div class="key-bind-btn" id="btn-cw" onclick="game.startRebind('cw')">KeyX</div></div>
-                <div class="key-bind-item"><span>Rotate CCW</span><div class="key-bind-btn" id="btn-ccw" onclick="game.startRebind('ccw')">KeyZ</div></div>
-                <div class="key-bind-item"><span>Rotate 180</span><div class="key-bind-btn" id="btn-rotate180" onclick="game.startRebind('rotate180')">KeyC</div></div>
-                <div class="key-bind-item"><span>Hold</span><div class="key-bind-btn" id="btn-hold" onclick="game.startRebind('hold')">ShiftLeft</div></div>
+                <strong>Reset Key</strong> : 필드 즉시 리셋<br>
+                <strong>Ctrl + Z</strong> : 되돌리기 (샌드박스 전용)
             </div>
         </div>
     </div>
@@ -590,8 +565,10 @@ canvas#tetrisCanvas {
             <div class="vs-mode-label">VS BOT MODE</div>
             <div class="vs-timer" id="vsTimerDisplay">00:00.00</div>
             <div class="vs-setting-item" style="margin-top: 15px; margin-bottom: 15px; text-align: center; width: 100%;">
-                <label for="vsBotPpsInput" style="font-size: 11px; color: #aaa; display: block; margin-bottom: 5px; font-weight: bold; letter-spacing: 0.5px;">BOT SPEED: <span id="vsBotPpsLabel">3.0</span> PPS</label>
-                <input type="range" id="vsBotPpsInput" min="0.5" max="15" value="3.0" step="0.5" style="width: 80%; background: #222; accent-color: #ff33aa;">
+                <label for="vsBotPpsInput" style="font-size: 11px; color: #aaa; display: block; margin-bottom: 5px; font-weight: bold; letter-spacing: 0.5px;">
+                    BOT SPEED: <input type="number" id="vsBotPpsInputText" min="0.5" max="15.0" step="0.1" value="3.0" style="width: 55px; background: #111; border: 1px solid #ff33aa; color: #fff; text-align: center; border-radius: 4px; padding: 2px 4px; font-size: 11px; font-family: monospace; font-weight: bold;"> PPS
+                </label>
+                <input type="range" id="vsBotPpsInput" min="0.5" max="15.0" value="3.0" step="0.1" style="width: 80%; background: #222; accent-color: #ff33aa;">
             </div>
             <!-- SCORE BOARD -->
             <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; margin-top: 5px; letter-spacing: 1px;">Score</div>
@@ -603,6 +580,7 @@ canvas#tetrisCanvas {
             <div class="vs-vs-badge">VS</div>
             <button class="vs-btn vs-reset-btn" onclick="game.reset()">RESET (R)</button>
             <button class="vs-btn vs-menu-btn" onclick="game.openModal()">🏆 MENU</button>
+            <button class="vs-btn vs-config-btn" onclick="game.openConfigModal()" style="margin-top: 6px;">⚙️ CONFIG</button>
             <div id="botTelemetryDisplay" style="font-size: 11px; font-family: monospace; color: #ff33aa; margin-top: 15px; background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255,51,170,0.2); text-align: center; width: 85%;">
                 ACTUAL PPS: <span id="actualPpsLabel" style="font-weight: bold; color: #fff;">0.00</span> / <span id="targetPpsLabel" style="font-weight: bold; color: #fff;">3.0</span>
             </div>
@@ -703,6 +681,77 @@ canvas#tetrisCanvas {
                 </div>
             </div>
             <button class="close-modal-btn" onclick="game.closeModal()">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- Configuration / Settings Modal -->
+    <div class="modal-overlay" id="configModal">
+        <div class="modal-content" style="max-width: 520px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <h2 style="margin-bottom: 12px;">SETTINGS & CONFIG</h2>
+            
+            <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 15px; text-align: left; margin-bottom: 15px;">
+                <!-- Left Column: Engine & Preferences -->
+                <div style="flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 10px;">
+                    <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border: 1px solid #444;">
+                        <h3 style="color: #ffcc00; font-size: 13px; margin: 0 0 8px 0; border-bottom: 1px solid #555; padding-bottom: 4px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">ENGINE</h3>
+                        <div class="setting-item" style="margin-bottom: 8px;">
+                            <label for="dasInput" style="font-size: 11px; color: #ccc; margin-bottom: 3px; display: block;">DAS (ms)</label>
+                            <input type="number" id="dasInput" value="130" min="0" max="500" style="width:100%; background:#111; border:1px solid #555; color:#fff; padding:4px 6px; border-radius:4px; font-size:12px;">
+                        </div>
+                        <div class="setting-item" style="margin-bottom: 8px;">
+                            <label for="arrInput" style="font-size: 11px; color: #ccc; margin-bottom: 3px; display: block;">ARR (ms)</label>
+                            <input type="number" id="arrInput" value="10" min="0" max="100" style="width:100%; background:#111; border:1px solid #555; color:#fff; padding:4px 6px; border-radius:4px; font-size:12px;">
+                        </div>
+                        <div class="setting-item" style="margin-bottom: 8px;">
+                            <label for="sdfInput" style="font-size: 11px; color: #ccc; margin-bottom: 3px; display: block;">SDF (1~40, 41=INF)</label>
+                            <input type="number" id="sdfInput" value="41" min="1" max="41" style="width:100%; background:#111; border:1px solid #555; color:#fff; padding:4px 6px; border-radius:4px; font-size:12px;">
+                        </div>
+                        <div class="setting-item" style="margin-bottom: 0;">
+                            <label for="clearDelayInput" style="font-size: 11px; color: #ccc; margin-bottom: 3px; display: block;">Line Clear Delay (ms)</label>
+                            <input type="number" id="clearDelayInput" value="0" min="0" max="1000" style="width:100%; background:#111; border:1px solid #555; color:#fff; padding:4px 6px; border-radius:4px; font-size:12px;">
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border: 1px solid #444;">
+                        <h3 style="color: #ffcc00; font-size: 13px; margin: 0 0 8px 0; border-bottom: 1px solid #555; padding-bottom: 4px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">PREFERENCES</h3>
+                        <div class="setting-item" style="margin-bottom: 8px;">
+                            <label for="skinSelect" style="font-size: 11px; color: #ccc; margin-bottom: 3px; display: block;">Block Skin</label>
+                            <select id="skinSelect" style="width: 100%; background: #111; color: #fff; border: 1px solid #555; padding: 4px; border-radius: 4px; font-size: 12px; outline: none;">
+                                <option value="classic">Classic</option>
+                                <option value="neon">Neon</option>
+                                <option value="pastel">Pastel</option>
+                                <option value="mono">Grayscale</option>
+                            </select>
+                        </div>
+                        <div class="setting-item" style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                            <input type="checkbox" id="resetLockCheckbox" style="cursor: pointer; accent-color: #ff33aa; width: auto; height: auto;">
+                            <label for="resetLockCheckbox" style="margin-bottom: 0; cursor: pointer; font-size: 11px; user-select: none; color: #ccc;">Lock Reset Hotkey during match</label>
+                        </div>
+                        <div class="setting-item" style="display: flex; align-items: center; gap: 6px; margin-bottom: 0;">
+                            <input type="checkbox" id="aiDebugOverlayCheckbox" style="cursor: pointer; accent-color: #ff33aa; width: auto; height: auto;">
+                            <label for="aiDebugOverlayCheckbox" style="margin-bottom: 0; cursor: pointer; font-size: 11px; user-select: none; color: #ccc;">Show AI Debug Overlay</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Key Configurations -->
+                <div style="flex: 1; min-width: 220px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border: 1px solid #444; display: flex; flex-direction: column;">
+                    <h3 style="color: #ffcc00; font-size: 13px; margin: 0 0 8px 0; border-bottom: 1px solid #555; padding-bottom: 4px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">KEY CONFIG</h3>
+                    <div class="key-bind-list" style="display: flex; flex-direction: column; gap: 6px;">
+                        <div class="key-bind-item"><span>Left</span><div class="key-bind-btn" id="modal-btn-left" onclick="game.startRebind('left')">ArrowLeft</div></div>
+                        <div class="key-bind-item"><span>Right</span><div class="key-bind-btn" id="modal-btn-right" onclick="game.startRebind('right')">ArrowRight</div></div>
+                        <div class="key-bind-item"><span>Soft Drop</span><div class="key-bind-btn" id="modal-btn-down" onclick="game.startRebind('down')">ArrowDown</div></div>
+                        <div class="key-bind-item"><span>Hard Drop</span><div class="key-bind-btn" id="modal-btn-hardDrop" onclick="game.startRebind('hardDrop')">Space</div></div>
+                        <div class="key-bind-item"><span>Rotate CW</span><div class="key-bind-btn" id="modal-btn-cw" onclick="game.startRebind('cw')">KeyX</div></div>
+                        <div class="key-bind-item"><span>Rotate CCW</span><div class="key-bind-btn" id="modal-btn-ccw" onclick="game.startRebind('ccw')">KeyZ</div></div>
+                        <div class="key-bind-item"><span>Rotate 180</span><div class="key-bind-btn" id="modal-btn-rotate180" onclick="game.startRebind('rotate180')">KeyC</div></div>
+                        <div class="key-bind-item"><span>Hold</span><div class="key-bind-btn" id="modal-btn-hold" onclick="game.startRebind('hold')">ShiftLeft</div></div>
+                        <div class="key-bind-item" style="border-top: 1px solid #444; padding-top: 6px; margin-top: 4px;"><span style="color: #ffaa55; font-weight: bold;">Reset Key</span><div class="key-bind-btn" id="modal-btn-reset" onclick="game.startRebind('reset')" style="border-color: #ffaa55; color: #ffaa55;">KeyR</div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="close-modal-btn" onclick="game.closeConfigModal()" style="background: linear-gradient(135deg, #00f0f0, #00a0a0); width: 100%; padding: 8px; font-weight: bold;">SAVE & CLOSE</button>
         </div>
     </div>
 </div>
@@ -1739,6 +1788,24 @@ class Renderer {
 
 
 
+const safeStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return this.memory[key] || null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            this.memory[key] = String(value);
+        }
+    },
+    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
+};
+
 class InputProvider {
     constructor() {
         this.game = null;
@@ -1769,7 +1836,7 @@ class KeyboardInputProvider extends InputProvider {
         this.keyBindings = {
             'ArrowLeft': 'left', 'ArrowRight': 'right', 'ArrowDown': 'down',
             'Space': 'hardDrop', 'KeyX': 'cw', 'KeyZ': 'ccw', 'KeyC': 'rotate180',
-            'ShiftLeft': 'hold'
+            'ShiftLeft': 'hold', 'KeyR': 'reset'
         };
         
         this.loadKeyBindings();
@@ -1789,10 +1856,17 @@ class KeyboardInputProvider extends InputProvider {
     startRebind(actionName) {
         this.rebindTarget = actionName;
         document.querySelectorAll('.key-bind-btn').forEach(btn => btn.classList.remove('active'));
+        
         const targetBtn = document.getElementById(`btn-${actionName}`);
         if (targetBtn) {
             targetBtn.classList.add('active');
             targetBtn.innerText = "Press key...";
+        }
+
+        const modalTargetBtn = document.getElementById(`modal-btn-${actionName}`);
+        if (modalTargetBtn) {
+            modalTargetBtn.classList.add('active');
+            modalTargetBtn.innerText = "Press key...";
         }
     }
 
@@ -1809,18 +1883,29 @@ class KeyboardInputProvider extends InputProvider {
             targetBtn.innerText = code;
             targetBtn.classList.remove('active');
         }
+
+        const modalTargetBtn = document.getElementById(`modal-btn-${this.rebindTarget}`);
+        if (modalTargetBtn) {
+            modalTargetBtn.innerText = code;
+            modalTargetBtn.classList.remove('active');
+        }
+
         this.rebindTarget = null;
     }
 
     saveKeyBindings() {
-        localStorage.setItem('tetris_key_bindings', JSON.stringify(this.keyBindings));
+        safeStorage.setItem('tetris_key_bindings', JSON.stringify(this.keyBindings));
     }
 
     loadKeyBindings() {
         try {
-            const stored = localStorage.getItem('tetris_key_bindings');
+            const stored = safeStorage.getItem('tetris_key_bindings');
             if (stored) {
                 this.keyBindings = JSON.parse(stored);
+                // Ensure reset key is present
+                if (!Object.values(this.keyBindings).includes('reset')) {
+                    this.keyBindings['KeyR'] = 'reset';
+                }
             }
         } catch (e) {
             console.error('Failed to load key bindings', e);
@@ -1828,8 +1913,8 @@ class KeyboardInputProvider extends InputProvider {
     }
 
     handleKeyDown(code) {
-        if (this.isModalOpen) return; 
         if (this.rebindTarget) { this.executeRebind(code); return; }
+        if (this.isModalOpen) return; 
         if (!this.game || this.game.countdownActive) return; 
 
         const action = this.keyBindings[code];
@@ -2452,14 +2537,32 @@ class DebugAI {
 
 // --- BATTLE MANAGER ---
 
+const safeStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return this.memory[key] || null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            this.memory[key] = String(value);
+        }
+    },
+    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
+};
+
 class BattleManager {
     constructor(player, bot) {
         this.player = player;
         this.bot = bot;
 
-        // Load scores from localStorage
-        this.playerWins = parseInt(localStorage.getItem('vs_player_wins') || '0');
-        this.botWins = parseInt(localStorage.getItem('vs_bot_wins') || '0');
+        // Load scores from safeStorage
+        this.playerWins = parseInt(safeStorage.getItem('vs_player_wins') || '0');
+        this.botWins = parseInt(safeStorage.getItem('vs_bot_wins') || '0');
 
         // Queues: Array of { lines: number, hole: number }
         this.playerGarbageQueue = [];
@@ -2589,12 +2692,12 @@ class BattleManager {
         // Set match outcome
         if (winnerName === 'PLAYER') {
             this.playerWins++;
-            localStorage.setItem('vs_player_wins', this.playerWins.toString());
+            safeStorage.setItem('vs_player_wins', this.playerWins.toString());
             this.player.matchResult = 'WIN';
             this.bot.matchResult = 'LOSE';
         } else if (winnerName === 'BOT') {
             this.botWins++;
-            localStorage.setItem('vs_bot_wins', this.botWins.toString());
+            safeStorage.setItem('vs_bot_wins', this.botWins.toString());
             this.player.matchResult = 'LOSE';
             this.bot.matchResult = 'WIN';
         }
@@ -2616,6 +2719,14 @@ class BattleManager {
         this.updateScoreUI();
     }
 
+    resetScore() {
+        this.playerWins = 0;
+        this.botWins = 0;
+        safeStorage.setItem('vs_player_wins', '0');
+        safeStorage.setItem('vs_bot_wins', '0');
+        this.updateScoreUI();
+    }
+
     updateScoreUI() {
         const playerWinsEl = document.getElementById('playerWinsLabel');
         const botWinsEl = document.getElementById('botWinsLabel');
@@ -2631,6 +2742,24 @@ class BattleManager {
 
 
 
+
+const safeStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return this.memory[key] || null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            this.memory[key] = String(value);
+        }
+    },
+    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
+};
 
 // Global instances
 const playerEngine = new GameInstance();
@@ -2712,13 +2841,13 @@ function formatTime(ms) {
 function saveSessionHistory(timeMs) {
     let history = [];
     try {
-        history = JSON.parse(localStorage.getItem('tetris_40l_history')) || [];
+        history = JSON.parse(safeStorage.getItem('tetris_40l_history')) || [];
     } catch (e) {
         history = [];
     }
     history.push(timeMs);
     if (history.length > 15) history = history.slice(history.length - 15);
-    localStorage.setItem('tetris_40l_history', JSON.stringify(history));
+    safeStorage.setItem('tetris_40l_history', JSON.stringify(history));
 }
 
 // Visual effect on canvas for Personal Best records
@@ -2736,16 +2865,16 @@ function openModal() {
     inputHandler.isModalOpen = true;
     document.getElementById('modeModal').classList.add('open');
     
-    const best40l = localStorage.getItem('best_record_40l');
+    const best40l = safeStorage.getItem('best_record_40l');
     document.getElementById('record-40l').innerText = best40l ? `PB: ${formatTime(parseInt(best40l))}` : `PB: --:--.--`;
-    document.getElementById('record-4w').innerText = `Max Combo: ${localStorage.getItem('max_combo_4w') || 0}`;
+    document.getElementById('record-4w').innerText = `Max Combo: ${safeStorage.getItem('max_combo_4w') || 0}`;
     
-    const bestCheese = localStorage.getItem('best_record_cheese');
+    const bestCheese = safeStorage.getItem('best_record_cheese');
     document.getElementById('record-cheese').innerText = bestCheese ? `PB: ${formatTime(parseInt(bestCheese))}` : `PB: --:--.--`;
 
     let history = [];
     try {
-        history = JSON.parse(localStorage.getItem('tetris_40l_history')) || [];
+        history = JSON.parse(safeStorage.getItem('tetris_40l_history')) || [];
     } catch (e) {
         history = [];
     }
@@ -2777,6 +2906,9 @@ function toggleLayout(modeName) {
 }
 
 function selectMode(modeName) {
+    if (playerEngine.currentMode === 'VS_BOT' && modeName !== 'VS_BOT') {
+        battleManager.resetScore();
+    }
     playerEngine.currentMode = modeName;
     botEngine.currentMode = modeName;
     toggleLayout(modeName);
@@ -2793,11 +2925,25 @@ function selectMode(modeName) {
     }
 }
 
+function openConfigModal() {
+    inputHandler.isModalOpen = true;
+    document.getElementById('configModal').classList.add('open');
+    initKeyBindLabels();
+}
+
+function closeConfigModal() {
+    updateSettings();
+    inputHandler.isModalOpen = false;
+    document.getElementById('configModal').classList.remove('open');
+}
+
 // Global hook for inline HTML onclick attributes
 window.game = {
     openModal,
     closeModal,
     selectMode,
+    openConfigModal,
+    closeConfigModal,
     reset: () => {
         playerEngine.reset();
         botEngine.reset();
@@ -2815,9 +2961,13 @@ window.game = {
 
 // UI settings synchronizer
 function updateSettings() {
-    const das = parseInt(document.getElementById('dasInput').value) || 0;
-    const arr = parseInt(document.getElementById('arrInput').value) || 0;
-    const sdf = parseInt(document.getElementById('sdfInput').value) || 1;
+    const dasVal = document.getElementById('dasInput').value;
+    const arrVal = document.getElementById('arrInput').value;
+    const sdfVal = document.getElementById('sdfInput').value;
+
+    const das = parseInt(dasVal) || 0;
+    const arr = parseInt(arrVal) || 0;
+    const sdf = parseInt(sdfVal) || 1;
     
     const delayInput = document.getElementById('clearDelayInput');
     const clearDelay = delayInput ? (parseInt(delayInput.value) || 0) : 0;
@@ -2830,6 +2980,62 @@ function updateSettings() {
     inputHandler.das = das;
     inputHandler.arr = arr;
     inputHandler.sdf = sdf;
+
+    // Persist to safeStorage
+    safeStorage.setItem('tetris_das', das.toString());
+    safeStorage.setItem('tetris_arr', arr.toString());
+    safeStorage.setItem('tetris_sdf', sdf.toString());
+    if (delayInput) safeStorage.setItem('tetris_clear_delay', clearDelay.toString());
+
+    const resetLockCheckbox = document.getElementById('resetLockCheckbox');
+    if (resetLockCheckbox) {
+        safeStorage.setItem('tetris_reset_lock', resetLockCheckbox.checked.toString());
+    }
+
+    const aiDebugCheckbox = document.getElementById('aiDebugOverlayCheckbox');
+    if (aiDebugCheckbox) {
+        safeStorage.setItem('tetris_ai_debug', aiDebugCheckbox.checked.toString());
+    }
+}
+
+// Load persisted settings
+function loadSettings() {
+    const storedDas = safeStorage.getItem('tetris_das');
+    if (storedDas !== null) {
+        document.getElementById('dasInput').value = storedDas;
+    }
+    const storedArr = safeStorage.getItem('tetris_arr');
+    if (storedArr !== null) {
+        document.getElementById('arrInput').value = storedArr;
+    }
+    const storedSdf = safeStorage.getItem('tetris_sdf');
+    if (storedSdf !== null) {
+        document.getElementById('sdfInput').value = storedSdf;
+    }
+    const storedDelay = safeStorage.getItem('tetris_clear_delay');
+    if (storedDelay !== null) {
+        const delayInput = document.getElementById('clearDelayInput');
+        if (delayInput) delayInput.value = storedDelay;
+    }
+    const storedResetLock = safeStorage.getItem('tetris_reset_lock');
+    if (storedResetLock !== null) {
+        const resetLockCheckbox = document.getElementById('resetLockCheckbox');
+        if (resetLockCheckbox) resetLockCheckbox.checked = (storedResetLock === 'true');
+    }
+    const storedAiDebug = safeStorage.getItem('tetris_ai_debug');
+    if (storedAiDebug !== null) {
+        const aiDebugCheckbox = document.getElementById('aiDebugOverlayCheckbox');
+        if (aiDebugCheckbox) aiDebugCheckbox.checked = (storedAiDebug === 'true');
+    }
+    const storedSkin = safeStorage.getItem('tetris_skin');
+    if (storedSkin !== null) {
+        playerRenderer.currentSkin = storedSkin;
+        botRenderer.currentSkin = storedSkin;
+        vsPlayerRenderer.currentSkin = storedSkin;
+        vsBotRenderer.currentSkin = storedSkin;
+    }
+
+    updateSettings();
 }
 
 // Register DOM inputs listeners
@@ -2840,6 +3046,12 @@ document.getElementById('sdfInput').addEventListener('input', updateSettings);
 const delayInputEl = document.getElementById('clearDelayInput');
 if (delayInputEl) delayInputEl.addEventListener('input', updateSettings);
 
+const resetLockCheckboxEl = document.getElementById('resetLockCheckbox');
+if (resetLockCheckboxEl) resetLockCheckboxEl.addEventListener('change', updateSettings);
+
+const aiDebugOverlayCheckboxEl = document.getElementById('aiDebugOverlayCheckbox');
+if (aiDebugOverlayCheckboxEl) aiDebugOverlayCheckboxEl.addEventListener('change', updateSettings);
+
 const sidebarPpsEl = document.getElementById('botPpsInput');
 const vsPpsEl = document.getElementById('vsBotPpsInput');
 const vsLabelEl = document.getElementById('vsBotPpsLabel');
@@ -2847,6 +3059,12 @@ const vsLabelEl = document.getElementById('vsBotPpsLabel');
 function syncBotPps(val) {
     let num = parseFloat(val) || 3.0;
     num = Math.max(0.5, Math.min(15.0, num));
+    
+    if (botScheduler && botScheduler.pps !== num) {
+        if (typeof battleManager !== 'undefined' && battleManager) {
+            battleManager.resetScore();
+        }
+    }
     
     if (sidebarPpsEl && parseFloat(sidebarPpsEl.value) !== num) {
         sidebarPpsEl.value = num.toFixed(1);
@@ -2856,6 +3074,11 @@ function syncBotPps(val) {
     }
     if (vsLabelEl) {
         vsLabelEl.innerText = num.toFixed(1);
+    }
+    
+    const vsPpsTextEl = document.getElementById('vsBotPpsInputText');
+    if (vsPpsTextEl && parseFloat(vsPpsTextEl.value) !== num) {
+        vsPpsTextEl.value = num.toFixed(1);
     }
     
     if (botScheduler) {
@@ -2874,6 +3097,21 @@ if (vsPpsEl) {
     });
 }
 
+const vsPpsTextEl = document.getElementById('vsBotPpsInputText');
+if (vsPpsTextEl) {
+    vsPpsTextEl.addEventListener('input', (e) => {
+        let val = parseFloat(e.target.value);
+        if (!isNaN(val) && val >= 0.5 && val <= 15.0) {
+            syncBotPps(val);
+        }
+    });
+    vsPpsTextEl.addEventListener('blur', (e) => {
+        let val = parseFloat(e.target.value) || 3.0;
+        val = Math.max(0.5, Math.min(15.0, val));
+        syncBotPps(val);
+    });
+}
+
 // Register skin changes
 const skinSelect = document.getElementById('skinSelect');
 if (skinSelect) {
@@ -2884,23 +3122,35 @@ if (skinSelect) {
         botRenderer.currentSkin = selectedSkin;
         vsPlayerRenderer.currentSkin = selectedSkin;
         vsBotRenderer.currentSkin = selectedSkin;
-        localStorage.setItem('tetris_skin', selectedSkin);
+        safeStorage.setItem('tetris_skin', selectedSkin);
     });
 }
 
 // Window Keyboard handlers
 window.addEventListener('keydown', (e) => {
     if (inputHandler.isModalOpen) return; 
+    
     if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
         e.preventDefault();
         if (!inputHandler.rebindTarget) {
-            engine.undo();
+            if (playerEngine.currentMode === 'SANDBOX') {
+                engine.undo();
+            }
             return;
         }
     }
-    if (e.code === 'KeyR') {
+    
+    const resetKey = inputHandler.getKeyByAction('reset') || 'KeyR';
+    if (e.code === resetKey) {
         if (!inputHandler.rebindTarget) {
             e.preventDefault();
+            
+            // Lock reset hotkey in Match
+            const resetLockCheckbox = document.getElementById('resetLockCheckbox');
+            if (resetLockCheckbox && resetLockCheckbox.checked && playerEngine.currentMode === 'VS_BOT' && playerEngine.gameActive && !playerEngine.countdownActive && !playerEngine.matchResult) {
+                return;
+            }
+            
             playerEngine.reset();
             botEngine.reset();
             botScheduler.clearQueue();
@@ -2914,6 +3164,7 @@ window.addEventListener('keydown', (e) => {
             return;
         }
     }
+    
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code) || inputHandler.rebindTarget) {
         e.preventDefault();
     }
@@ -2931,6 +3182,10 @@ function initKeyBindLabels() {
         const btn = document.getElementById(`btn-${action}`);
         if (btn) {
             btn.innerText = key;
+        }
+        const modalBtn = document.getElementById(`modal-btn-${action}`);
+        if (modalBtn) {
+            modalBtn.innerText = key;
         }
     }
 }
@@ -3083,10 +3338,10 @@ botEngine.onUIUpdate = () => {
 playerEngine.onNewBest = (modeName, scoreType, value) => {
     if (modeName === 'VS_BOT') return;
     if (modeName === '40L') {
-        const localBest = localStorage.getItem('best_record_40l');
+        const localBest = safeStorage.getItem('best_record_40l');
         const isNewBest = !localBest || value < parseInt(localBest);
         if (isNewBest) {
-            localStorage.setItem('best_record_40l', value);
+            safeStorage.setItem('best_record_40l', value);
             triggerPBFlash();
             playerEngine.onAction("🏆 NEW PB!");
         } else {
@@ -3094,20 +3349,20 @@ playerEngine.onNewBest = (modeName, scoreType, value) => {
         }
         saveSessionHistory(value);
     } else if (modeName === 'CHEESE') {
-        const localCheese = localStorage.getItem('best_record_cheese');
+        const localCheese = safeStorage.getItem('best_record_cheese');
         const isNewBest = !localCheese || value < parseInt(localCheese);
         if (isNewBest) {
-            localStorage.setItem('best_record_cheese', value);
+            safeStorage.setItem('best_record_cheese', value);
             triggerPBFlash();
             playerEngine.onAction("🏆 NEW PB!");
         } else {
             playerEngine.onAction("CHEESE ALL CLEARED!");
         }
     } else if (modeName === '4W') {
-        const localMax4w = parseInt(localStorage.getItem('max_combo_4w') || 0);
+        const localMax4w = parseInt(safeStorage.getItem('max_combo_4w') || 0);
         const isNewBest = value > localMax4w;
         if (isNewBest) {
-            localStorage.setItem('max_combo_4w', value);
+            safeStorage.setItem('max_combo_4w', value);
             triggerPBFlash();
             playerEngine.onAction("🏆 NEW MAX COMBO!");
         } else {
@@ -3117,7 +3372,7 @@ playerEngine.onNewBest = (modeName, scoreType, value) => {
 };
 
 // Initial setup
-updateSettings();
+loadSettings();
 initKeyBindLabels();
 toggleLayout(playerEngine.currentMode);
 

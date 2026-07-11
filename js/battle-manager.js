@@ -1,11 +1,29 @@
+const safeStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return this.memory[key] || null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            this.memory[key] = String(value);
+        }
+    },
+    memory: (window.safeStorageMemory || (window.safeStorageMemory = {}))
+};
+
 export class BattleManager {
     constructor(player, bot) {
         this.player = player;
         this.bot = bot;
 
-        // Load scores from localStorage
-        this.playerWins = parseInt(localStorage.getItem('vs_player_wins') || '0');
-        this.botWins = parseInt(localStorage.getItem('vs_bot_wins') || '0');
+        // Load scores from safeStorage
+        this.playerWins = parseInt(safeStorage.getItem('vs_player_wins') || '0');
+        this.botWins = parseInt(safeStorage.getItem('vs_bot_wins') || '0');
 
         // Queues: Array of { lines: number, hole: number }
         this.playerGarbageQueue = [];
@@ -135,12 +153,12 @@ export class BattleManager {
         // Set match outcome
         if (winnerName === 'PLAYER') {
             this.playerWins++;
-            localStorage.setItem('vs_player_wins', this.playerWins.toString());
+            safeStorage.setItem('vs_player_wins', this.playerWins.toString());
             this.player.matchResult = 'WIN';
             this.bot.matchResult = 'LOSE';
         } else if (winnerName === 'BOT') {
             this.botWins++;
-            localStorage.setItem('vs_bot_wins', this.botWins.toString());
+            safeStorage.setItem('vs_bot_wins', this.botWins.toString());
             this.player.matchResult = 'LOSE';
             this.bot.matchResult = 'WIN';
         }
@@ -159,6 +177,14 @@ export class BattleManager {
         this.player.matchResult = null;
         this.bot.matchResult = null;
         this.matchInProgress = true;
+        this.updateScoreUI();
+    }
+
+    resetScore() {
+        this.playerWins = 0;
+        this.botWins = 0;
+        safeStorage.setItem('vs_player_wins', '0');
+        safeStorage.setItem('vs_bot_wins', '0');
         this.updateScoreUI();
     }
 
